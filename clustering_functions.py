@@ -158,6 +158,14 @@ def save_dbscan_results(filtered_data, outpath, epsilon, min_n):
                 " Number of clusters = " + str(number_of_clusters) +
                 " \n Epsilon = " + str(epsilon) + " nm" + " n = " + str(min_n))
 
+def calculate():
+
+    pass
+
+def analyse_data():
+
+    pass
+
 def main():
 
     path = 'C:/users/mxq76232/Downloads/pictest/rip_test.csv'
