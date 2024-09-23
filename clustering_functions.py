@@ -145,6 +145,8 @@ def denoise_data(dbscan_data, min_n):
         else:
             
             continue
+    
+    return noiseless_data
 
 def save_dbscan_results(filtered_data, outpath, epsilon, min_n):
 
@@ -157,13 +159,57 @@ def save_dbscan_results(filtered_data, outpath, epsilon, min_n):
                 " Number of clusters = " + str(number_of_clusters) +
                 " \n Epsilon = " + str(epsilon) + " nm" + " n = " + str(min_n))
 
-def calculate():
+def calculate_intensity(points):
 
-    pass
+    return np.size(points, axis=0)
 
-def analyse_data():
+def calculate_center_of_mass(points):
 
-    pass
+    return np.mean(points, axis=0)
+
+def calculate_clust_area(points):
+
+    return ConvexHull(points).volume
+
+def calculate_radius(points, center):
+    
+    return np.max(pairwise_distances(points, center))
+
+def analyse_clusters(dbscan_data):
+
+    analysis_results = []
+
+    cluster_labels = np.unique(dbscan_data[:, 3])
+
+    for label in cluster_labels:
+
+        cluster_points = dbscan_data[(dbscan_data[:, 3] == label)]
+
+        cluster_points_xy = cluster_points[:, 0:2]
+
+        intensity = calculate_intensity(cluster_points)
+
+        center_of_mass = calculate_center_of_mass(cluster_points)
+
+        cluster_area = calculate_clust_area(cluster_points)
+
+        center = center_of_mass[:, np.newaxis]
+        center = center.T
+
+        cluster_radius = calculate_radius(cluster_points_xy, center=center)
+
+        analysis_results.append([center_of_mass[0], center_of_mass[1], cluster_area,
+                                 cluster_radius, intensity, label])
+        
+    return np.array(analysis_results).reshape(-1, 6)
+
+def save_cluster_analysis(cluster_data, outpath):
+
+    no_of_clusters = np.unique(cluster_data[:, -1])
+
+    np.savetxt(outpath + "/dbscan_analysis.txt", cluster_data, fmt="%.5e",
+                header="DBSCAN Analysis \n x[nm] y[nm] area[nm^2] radius [nm]"
+                          "intensity label \n Number of clusters = " + str(no_of_clusters))
 
 def main():
 
