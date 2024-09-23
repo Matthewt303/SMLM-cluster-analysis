@@ -8,7 +8,6 @@ import matplotlib as mpl
 from scipy.spatial import ConvexHull
 from sklearn.metrics import pairwise_distances
 import math
-
 import ripleyk
 
 def load_locs(path):
@@ -30,7 +29,7 @@ def ripley_h_function(xy_data, r, br):
 
     k = ripleyk.calculate_ripley(r, br, d1=xy_data[:, 0], d2=xy_data[:, 1],
                                  boundary_correct=True, CSR_Normalise=True)
-
+    
     return k
 
 def ripley_l_function(k_values):
@@ -112,14 +111,14 @@ def calculate_epsilon(optics_distances, threshold):
 
     distances_vs_counts = np.concatenate((distances, cumulative_distances), axis=1)
 
-    epsilon = np.min(distances_vs_counts[(distances_vs_counts[:, 1]) >= 0.9], axis=0)
+    epsilon = np.min(distances_vs_counts[(distances_vs_counts[:, 1]) >= threshold], axis=0)
 
     return epsilon[0]
 
 def save_eps(outpath, epsilon):
 
-        with open(outpath + '/optics_epsilon.txt', 'w') as f:
-            f.write('The value of epsilon is: ' + str(epsilon) + ' nm')
+    with open(outpath + '/optics_epsilon.txt', 'w') as f:
+        f.write('The value of epsilon is: ' + str(epsilon) + ' nm')
 
 def dbscan(locs, epsilon, min_n):
 
