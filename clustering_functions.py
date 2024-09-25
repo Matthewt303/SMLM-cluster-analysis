@@ -22,7 +22,7 @@ def load_locs(path):
     locs = np.genfromtxt(path, delimiter=',', dtype=float,
                          skip_header=1)
     
-    return locs
+    return locs.reshape(-1, 9)
 
 def extract_xy(locs):
 
@@ -42,7 +42,11 @@ def generate_radii(bounding_radius, increment):
 
     return list(range(0, bounding_radius, increment))
 
-def ripley_h_function(xy_data, r, br):
+def ripley_k_function(xy_data, r, br):
+
+    """
+    2D Ripley's K=function
+    """
 
     k = ripleyk.calculate_ripley(r, br, d1=xy_data[:, 0], d2=xy_data[:, 1],
                                  boundary_correct=True, CSR_Normalise=True)
@@ -51,31 +55,48 @@ def ripley_h_function(xy_data, r, br):
 
 def ripley_l_function(k_values):
 
+    """
+    2D Ripley's L-function, normalized such that the expected value is r
+    """
+
     return math.sqrt(k_values / np.pi)
 
 def ripley_h_function(l_values, radii):
+
+    """
+    2D Ripley's H-function, normalized such that the expected value is 0.
+    """
 
     return l_values - radii
 
 def plot_ripley_h(h_values, radii, out, title):
 
+    """
+    Plots Ripley's H-function against radii.
+    """
+
     plt.ioff()
 
+    # Set font type and size for axis values
     mpl.rcParams['font.family'] = 'sans-serif'
     mpl.rcParams['font.size'] = 28
 
     fig, ax = plt.subplots(figsize=(12, 12), dpi=500)
 
+    # Plot Ripley's H-function against radii
     ax.plot(radii, h_values, 'b', linewidth=5.0)
 
+    # Set axis limits
     ax.set_xlim(left=0)
 
     ratio = 1.0
 
+    # Make sure figure is square
     x_left, x_right = ax.get_xlim()
     y_low, y_high = ax.get_ylim()
     ax.set_aspect(abs((x_right-x_left)/(y_low-y_high)) * ratio)
 
+    # Major and minor tick parameters
     ax.tick_params(axis='y', which='major', length=10, direction='in')
     ax.tick_params(axis='y', which='minor', length=5, direction='in')
     ax.tick_params(axis='x', which='major', length=10, direction='in')
@@ -84,6 +105,7 @@ def plot_ripley_h(h_values, radii, out, title):
     ax.xaxis.set_minor_locator(AutoMinorLocator(10))
     ax.yaxis.set_minor_locator(AutoMinorLocator(10))
 
+    # Set colors of axes and box
     ax.xaxis.label.set_color('black')
     ax.yaxis.label.set_color('black')
 
@@ -96,6 +118,7 @@ def plot_ripley_h(h_values, radii, out, title):
     ax.spines['right'].set_linewidth(1.0)
     ax.spines['left'].set_linewidth(1.0)
 
+    # Axis labels
     ax.set_xlabel('Radius (nm)', labelpad=6, fontsize=40)
     ax.set_ylabel('H(r)', labelpad=2, fontsize=40)
 
@@ -104,27 +127,42 @@ def plot_ripley_h(h_values, radii, out, title):
 
 def hdbscan(locs, min_n):
 
-    hdbscan = HDBSCAN(min_cluster_size=min_n).fit(locs[:, 0:2])
+    """"
+    HDBSCAN clustering of localization data
+    """
 
+    # Instantiate and fit
+    hdbscan = HDBSCAN(min_cluster_size=min_n).fit(locs[:, 2:4])
+
+    # DBSCAN labels
     labels = hdbscan.labels_
 
+    # Reassgine label for noise
     labels[(labels == 0)] = -1
 
     cluster_probabilities = hdbscan.probabilities_
 
-    return np.concatenate((locs[:, 0:3], labels[:, np.newaxis], cluster_probabilities[:, np.newaxis]), axis=1)
+    # Combine localisation data, labels, and probabilities
+    return np.concatenate((locs, labels[:, np.newaxis], cluster_probabilities[:, np.newaxis]), axis=1)
 
 def denoise_data(dbscan_data, min_n):
 
-    noiseless_data = dbscan_data[(dbscan_data[:, 3] > 0)]
+    """
+    Removes clusters below a minimum localizations threshold and noise.
+    """
 
-    label_count = dict(Counter(noiseless_data[:, 3]))
+    # Remove noise
+    noiseless_data = dbscan_data[(dbscan_data[:, -2] > 0)]
+
+    # Count how many localisations are assigned to each cluster
+    label_count = dict(Counter(noiseless_data[:, -2]))
 
     for label, count in label_count.items():
 
+        # If no. of localizations is below the threshold, discard from data
         if count < min_n:
                 
-            noiseless_data = noiseless_data[(noiseless_data[:, 3] != float(label))]
+            noiseless_data = noiseless_data[(noiseless_data[:, -2] != float(label))]
         
         else:
             
@@ -132,16 +170,27 @@ def denoise_data(dbscan_data, min_n):
     
     return noiseless_data
 
-def save_dbscan_results(filtered_data, outpath, min_n):
+def save_dbscan_results(filtered_data, outpath):
 
-    cluster_labels = np.unique((filtered_data[:, 3]))
+    """
+    Convert dbscan results to dataframe and save as .csv
+    """
 
-    number_of_clusters = np.size(cluster_labels)
+    cols = ['id',
+            'frame',
+            'x [nm]',
+            'y [nm]',
+            'sigma [nm]',
+            'intensity [photons]',
+            'offset [photons]',
+            'bkgstd [photons]',
+            'uncertainty [nm]',
+            'label',
+            'probability']
+    
+    dbscan_results_df = pd.DataFrame(data=filtered_data, columns=cols)
 
-    np.savetxt(outpath + "/dbscan_output.txt", cluster_labels, fmt='%.5e', 
-               header="DBSCAN \n x[nm] y[nm] t[frame] cluster \n "
-                " Number of clusters = " + str(number_of_clusters) + "\n"
-                 +  "n = " + str(min_n))
+    dbscan_results_df.to_csv(outpath + '/dbscan_output.txt')
 
 def calculate_intensity(points):
 
@@ -187,29 +236,132 @@ def analyse_clusters(dbscan_data):
         
     return np.array(analysis_results).reshape(-1, 6)
 
-def filter_clusters():
+def filter_clusters(cluster_data):
 
-    pass
+    """
+    Remove clusters with very large radii and ensure no values are nan.
+    """
+    cluster_data = cluster_data[~np.isnan(cluster_data).any(axis=1), :]
+
+    filtered_clust_data = cluster_data[(cluster_data[:, 3] < 400)]
+
+    return filtered_clust_data[(filtered_clust_data[:, 3] > 0)]
 
 
-def convert_to_dataframe(cluster_data):
+def convert_to_dataframe(filt_cluster_data):
 
     cols = [
         'x[nm]',
         'y[nm]',
-        'area[nm^2]',
-        'radius [nm]',
-        'intensity',
+        'Area [nm^2]',
+        'Radius [nm]',
+        'Intensity',
         'label'
     ]
 
-    cluster_data_df = pd.DataFrame(data=cluster_data, columns=cols)
+    cluster_data_df = pd.DataFrame(data=filt_cluster_data, columns=cols)
 
     return cluster_data_df
     
-def save_cluster_analysis(cluster_data, outpath):
+def save_cluster_analysis(filt_cluster_data, outpath):
 
-    cluster_data.to_csv(outpath + "/dbscan_analysis.txt", sep='\t')
+    filt_cluster_data.to_csv(outpath + '/dbscan_analysis.csv', sep=',')
+
+def plot_histogram(data, title, out):
+
+    plt.ioff()
+
+    weights = np.ones_like(data) / float(len(data))
+
+    mpl.rcParams['font.family'] = 'sans-serif'
+    mpl.rcParams['font.size'] = 28
+
+    fig, ax = plt.subplots(figsize=(10, 10), dpi=500)
+
+    plt.hist(data, bins=20, weights=weights, edgecolor='black', linewidth=1.1, color='C3')
+
+    ax.set_xlim(right=np.max(data) + 0.05 * np.max(data))
+    
+    ratio = 1.0
+
+    x_left, x_right = ax.get_xlim()
+    y_low, y_high = ax.get_ylim()
+    ax.set_aspect(abs((x_right-x_left)/(y_low-y_high)) * ratio)
+
+    ax.tick_params(axis='y', which='major', length=10, direction='in')
+    ax.tick_params(axis='y', which='minor', length=5, direction='in')
+    ax.tick_params(axis='x', which='major', length=10, direction='in')
+    ax.tick_params(axis='x', which='minor', length=5, direction='in')
+
+    ax.xaxis.set_minor_locator(AutoMinorLocator(10))
+    ax.yaxis.set_minor_locator(AutoMinorLocator(10))
+
+    ax.xaxis.label.set_color('black')
+    ax.yaxis.label.set_color('black')
+
+    ax.spines['bottom'].set_color('black')
+    ax.spines['top'].set_color('black')
+    ax.spines['right'].set_color('black')
+    ax.spines['left'].set_color('black')
+    ax.spines['bottom'].set_linewidth(1.0)
+    ax.spines['top'].set_linewidth(1.0)
+    ax.spines['right'].set_linewidth(1.0)
+    ax.spines['left'].set_linewidth(1.0)
+
+    ax.set_xlabel(title, labelpad=6, fontsize=40)
+    ax.set_ylabel('Frequency', labelpad=2, fontsize=40)
+
+    plt.savefig(out + '/' + title + '.png')
+
+def plot_cluster_statistics(filt_cluster_data, outpath):
+
+    for i in range(2, 5):
+
+        plot_histogram(filt_cluster_data[filt_cluster_data.columns[i]],
+                      filt_cluster_data.columns[1], out=outpath)
+
+def make_circles(x, y, r):
+
+    circles = [plt.Circle((xi, yi), radius=c, linewidth=0)
+               for xi, yi, c in zip(x, y, r)]
+    
+    return circles
+
+def scale_x_y_r(cluster_data, scaling_factor):
+
+    scale_x = cluster_data[cluster_data.columns[0]]
+
+    scale_y = cluster_data[cluster_data.columns[1]]
+    
+    scale_r = cluster_data[cluster_data.columns[2]]
+
+    return scale_x, scale_y, scale_r
+
+def plot_clusters(cluster_data, loc_data):
+
+    x, y, r = scale_x_y_r(cluster_data=cluster_data, scaling_factor=19)
+
+    xy_locs = extract_xy(locs=loc_data)
+    
+    px = 1/plt.rcParams['figure.dpi']
+
+    plt.figure(figsize=(2000*px, 2000*px))
+
+    clusters = mpl.collections.PatchCollection(
+        make_circles(x, y, r), facecolor='none', color='b')
+
+    ax = plt.gca
+
+    ratio = 1.0
+    
+    ax.set_xlim([0, 2100])
+    ax.set_ylim([0, 2100])
+
+    x_left, x_right = ax.get_xlim()
+    y_low, y_high = ax.get_ylim()
+    ax.set_aspect(abs((x_right-x_left)/(y_low-y_high)) * ratio)
+
+    pass
 
 def main():
 
