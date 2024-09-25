@@ -1,16 +1,23 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from collections import Counter
-from sklearn.cluster import OPTICS, DBSCAN
+from sklearn.cluster import HDBSCAN
+import ripleyk
+import pandas as pd
+import seaborn as sns
 from matplotlib.ticker import AutoMinorLocator
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 from scipy.spatial import ConvexHull
 from sklearn.metrics import pairwise_distances
 import math
-import ripleyk
+
 
 def load_locs(path):
+
+    """
+    Extract localisation data from .csv file, preferably from ThunderSTORM
+    """
 
     locs = np.genfromtxt(path, delimiter=',', dtype=float,
                          skip_header=1)
@@ -19,9 +26,19 @@ def load_locs(path):
 
 def extract_xy(locs):
 
+    """
+    Extract xy localisations
+    """
+
     return locs[:, 2:4]
 
 def generate_radii(bounding_radius, increment):
+
+    """
+    Generate a list of radii for cluster detection via Ripley functions.
+    Bounding radius is the maximum radius while the increment defines the range 
+    of radii for the functions.
+    """
 
     return list(range(0, bounding_radius, increment))
 
@@ -84,51 +101,18 @@ def plot_ripley_h(h_values, radii, out, title):
 
     plt.savefig(out + '/' + str(title) + '.png')
 
-def optics_clustering(xy_data, min_samples):
 
-    clusters = OPTICS(min_samples=min_samples, max_eps=100,
-                          n_jobs=1).fit(xy_data)
-    
-    return clusters.core_distances_
+def hdbscan(locs, min_n):
 
-def calculate_epsilon(optics_distances, threshold):
+    hdbscan = HDBSCAN(min_cluster_size=min_n).fit(locs[:, 0:2])
 
-    filtered_distances = optics_distances[(optics_distances < 200)]
-
-    distances_count = Counter(filtered_distances)
-
-    sorted_counts = dict(sorted(distances_count.items()))
-
-    norm_distance_counts = np.array(list(sorted_counts.values())) / sum(sorted_counts.values())
-
-    cumulative_distances = np.cumsum(norm_distance_counts)
-
-    cumulative_distances = cumulative_distances[:, np.newaxis]
-
-    distances = np.array(list(sorted_counts.keys()))
-
-    distances = distances[:, np.newaxis]
-
-    distances_vs_counts = np.concatenate((distances, cumulative_distances), axis=1)
-
-    epsilon = np.min(distances_vs_counts[(distances_vs_counts[:, 1]) >= threshold], axis=0)
-
-    return epsilon[0]
-
-def save_eps(outpath, epsilon):
-
-    with open(outpath + '/optics_epsilon.txt', 'w') as f:
-        f.write('The value of epsilon is: ' + str(epsilon) + ' nm')
-
-def dbscan(locs, epsilon, min_n):
-
-    dbscan = DBSCAN(eps=epsilon, min_samples=min_n).fit(locs[:, 0:2])
-
-    labels = dbscan.labels_
+    labels = hdbscan.labels_
 
     labels[(labels == 0)] = -1
 
-    return np.concatenate((locs[:, 0:3], labels[:, np.newaxis],), axis=1)
+    cluster_probabilities = hdbscan.probabilities_
+
+    return np.concatenate((locs[:, 0:3], labels[:, np.newaxis], cluster_probabilities[:, np.newaxis]), axis=1)
 
 def denoise_data(dbscan_data, min_n):
 
@@ -148,7 +132,7 @@ def denoise_data(dbscan_data, min_n):
     
     return noiseless_data
 
-def save_dbscan_results(filtered_data, outpath, epsilon, min_n):
+def save_dbscan_results(filtered_data, outpath, min_n):
 
     cluster_labels = np.unique((filtered_data[:, 3]))
 
@@ -156,8 +140,8 @@ def save_dbscan_results(filtered_data, outpath, epsilon, min_n):
 
     np.savetxt(outpath + "/dbscan_output.txt", cluster_labels, fmt='%.5e', 
                header="DBSCAN \n x[nm] y[nm] t[frame] cluster \n "
-                " Number of clusters = " + str(number_of_clusters) +
-                " \n Epsilon = " + str(epsilon) + " nm" + " n = " + str(min_n))
+                " Number of clusters = " + str(number_of_clusters) + "\n"
+                 +  "n = " + str(min_n))
 
 def calculate_intensity(points):
 
@@ -203,13 +187,29 @@ def analyse_clusters(dbscan_data):
         
     return np.array(analysis_results).reshape(-1, 6)
 
+def filter_clusters():
+
+    pass
+
+
+def convert_to_dataframe(cluster_data):
+
+    cols = [
+        'x[nm]',
+        'y[nm]',
+        'area[nm^2]',
+        'radius [nm]',
+        'intensity',
+        'label'
+    ]
+
+    cluster_data_df = pd.DataFrame(data=cluster_data, columns=cols)
+
+    return cluster_data_df
+    
 def save_cluster_analysis(cluster_data, outpath):
 
-    no_of_clusters = np.unique(cluster_data[:, -1])
-
-    np.savetxt(outpath + "/dbscan_analysis.txt", cluster_data, fmt="%.5e",
-                header="DBSCAN Analysis \n x[nm] y[nm] area[nm^2] radius [nm]"
-                          "intensity label \n Number of clusters = " + str(no_of_clusters))
+    cluster_data.to_csv(outpath + "/dbscan_analysis.txt", sep='\t')
 
 def main():
 
