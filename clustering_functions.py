@@ -194,21 +194,43 @@ def save_dbscan_results(filtered_data, outpath):
 
 def calculate_intensity(points):
 
+    """
+    Calculates cluster intensity, i.e. how many localisations per cluster.
+    """
+
     return np.size(points, axis=0)
 
 def calculate_center_of_mass(points):
+
+    """
+    Calculates cluster centroid.
+    """
 
     return np.mean(points, axis=0)
 
 def calculate_clust_area(points):
 
+    """
+    Calculates cluster area with the Convexhull method.
+    """
+
     return ConvexHull(points).volume
 
 def calculate_radius(points, center):
+
+    """
+    Radius calculation. First calculates the pairwise distance of all
+    cluster points from the centroid then selects the maximum.
+    """
     
     return np.max(pairwise_distances(points, center))
 
 def analyse_clusters(dbscan_data):
+
+    """
+    This function loops through each cluster label, extracts the xy localisations,
+    then calculates cluster intensity, area, and radius.
+    """
 
     analysis_results = []
 
@@ -250,6 +272,10 @@ def filter_clusters(cluster_data):
 
 def convert_to_dataframe(filt_cluster_data):
 
+    """
+    Converts cluster analysis results to a dataframe.
+    """
+
     cols = [
         'x[nm]',
         'y[nm]',
@@ -268,6 +294,10 @@ def save_cluster_analysis(filt_cluster_data, outpath):
     filt_cluster_data.to_csv(outpath + '/dbscan_analysis.csv', sep=',')
 
 def plot_histogram(data, title, out):
+
+    """
+    Plots a histogram for a column of data.
+    """
 
     plt.ioff()
 
@@ -315,6 +345,10 @@ def plot_histogram(data, title, out):
 
 def plot_cluster_statistics(filt_cluster_data, outpath):
 
+    """
+    Plots and saves histograms for cluster intensity, area, and radius.
+    """
+
     for i in range(2, 5):
 
         plot_histogram(filt_cluster_data[filt_cluster_data.columns[i]],
@@ -327,31 +361,37 @@ def make_circles(x, y, r):
     
     return circles
 
-def scale_x_y_r(cluster_data, scaling_factor):
+def extract_xyr(cluster_data):
 
-    scale_x = cluster_data[cluster_data.columns[0]]
+    x = cluster_data[cluster_data.columns[0]]
 
-    scale_y = cluster_data[cluster_data.columns[1]]
-    
-    scale_r = cluster_data[cluster_data.columns[2]]
+    y = cluster_data[cluster_data.columns[1]]
 
-    return scale_x, scale_y, scale_r
+    r = cluster_data[cluster_data.columns[3]]
 
-def plot_clusters(cluster_data, loc_data):
+    return x, y, r
 
-    x, y, r = scale_x_y_r(cluster_data=cluster_data, scaling_factor=19)
+def scale(data, scaling_factor):
 
-    xy_locs = extract_xy(locs=loc_data)
+    return data / scaling_factor
+
+def plot_clusters(cluster_data, loc_data, out, title):
+
+    x, y, r = extract_xyr(cluster_data=cluster_data)
+
+    x, y, r = scale(x, scaling_factor=19), scale(y, scaling_factor=19), scale(r, scaling_factor=19)
+
+    xy_locs = scale(extract_xy(locs=loc_data))
     
     px = 1/plt.rcParams['figure.dpi']
 
-    plt.figure(figsize=(2000*px, 2000*px))
+    fig, ax = plt.subplot(figsize=(2000*px, 2000*px), dpi=500)
 
     clusters = mpl.collections.PatchCollection(
         make_circles(x, y, r), facecolor='none', color='b')
 
-    ax = plt.gca
-
+    ax.scatter()
+    
     ratio = 1.0
     
     ax.set_xlim([0, 2100])
@@ -360,8 +400,35 @@ def plot_clusters(cluster_data, loc_data):
     x_left, x_right = ax.get_xlim()
     y_low, y_high = ax.get_ylim()
     ax.set_aspect(abs((x_right-x_left)/(y_low-y_high)) * ratio)
+    ax.invert_yaxis()
+    ax.xaxis.tick_top()
+    ax.add_artist(clusters)
 
-    pass
+    ax.tick_params(axis='y', which='major', length=10, direction='in')
+    ax.tick_params(axis='y', which='minor', length=5, direction='in')
+    ax.tick_params(axis='x', which='major', length=10, direction='in')
+    ax.tick_params(axis='x', which='minor', length=5, direction='in')
+
+    ax.xaxis.set_minor_locator(AutoMinorLocator(10))
+    ax.yaxis.set_minor_locator(AutoMinorLocator(10))
+
+    ax.xaxis.label.set_color('black')
+    ax.yaxis.label.set_color('black')
+
+    ax.spines['bottom'].set_color('black')
+    ax.spines['top'].set_color('black')
+    ax.spines['right'].set_color('black')
+    ax.spines['left'].set_color('black')
+    ax.spines['bottom'].set_linewidth(1.0)
+    ax.spines['top'].set_linewidth(1.0)
+    ax.spines['right'].set_linewidth(1.0)
+    ax.spines['left'].set_linewidth(1.0)
+
+    ax.set_xlabel('x (nm)', labelpad=6, fontsize=40)
+    ax.set_ylabel('y (nm)', labelpad=2, fontsize=40)
+
+    plt.savefig(out + '/' + title + '.png')
+
 
 def main():
 
