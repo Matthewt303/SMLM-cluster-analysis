@@ -12,6 +12,31 @@ from scipy.spatial import ConvexHull
 from sklearn.metrics import pairwise_distances
 import math
 
+def user_input():
+
+    counter = 0
+
+    input_text = ''
+
+    while True:
+
+        if counter == 3:
+
+            raise SystemError('Too many incorrect attempts, exiting.')
+        
+        input_text = input('')
+        
+        if len(input_text) > 0:
+
+            break
+
+        else:
+
+            counter += 1
+
+            print('Invalid input, you have 3 - ' + str(counter) + 'attempts remaining')
+        
+    return input_text
 
 def load_locs(path):
 
@@ -45,13 +70,12 @@ def generate_radii(bounding_radius, increment):
 def ripley_k_function(xy_data, r, br):
 
     """
-    2D Ripley's K=function
+    2D Ripley's K=function. Converts result to numpy array
     """
 
-    k = ripleyk.calculate_ripley(r, br, d1=xy_data[:, 0], d2=xy_data[:, 1],
-                                 boundary_correct=True, CSR_Normalise=True)
+    k = ripleyk.calculate_ripley(r, br, d1=xy_data[:, 0], d2=xy_data[:, 1])
     
-    return k
+    return np.array(k).reshape(len(k), 1)
 
 def ripley_l_function(k_values):
 
@@ -59,15 +83,16 @@ def ripley_l_function(k_values):
     2D Ripley's L-function, normalized such that the expected value is r
     """
 
-    return math.sqrt(k_values / np.pi)
+    return np.sqrt(k_values / np.pi)
 
 def ripley_h_function(l_values, radii):
 
     """
     2D Ripley's H-function, normalized such that the expected value is 0.
+    The radii are converted to a numpy array.
     """
 
-    return l_values - radii
+    return l_values - np.array(radii).reshape(len(radii), 1)
 
 def plot_ripley_h(h_values, radii, out, title):
 
@@ -85,6 +110,7 @@ def plot_ripley_h(h_values, radii, out, title):
 
     # Plot Ripley's H-function against radii
     ax.plot(radii, h_values, 'b', linewidth=5.0)
+    ax.axhline(y=0, color='r')
 
     # Set axis limits
     ax.set_xlim(left=0)
@@ -124,6 +150,16 @@ def plot_ripley_h(h_values, radii, out, title):
 
     plt.savefig(out + '/' + str(title) + '.png')
 
+def calculate_rmax(h_values, radii):
+
+    return radii[h_values.argmax()]
+
+def save_max_r(outpath, max_r):
+
+    with open(outpath + '/max_r.txt') as f:
+
+        f.write('The maximum value of r is: ' + str(max_r)
+                + ' nm')
 
 def hdbscan(locs, min_n):
 
@@ -390,7 +426,8 @@ def plot_clusters(cluster_data, loc_data, out, title):
     clusters = mpl.collections.PatchCollection(
         make_circles(x, y, r), facecolor='none', color='b')
 
-    ax.scatter()
+    ax.scatter(xy_locs[:, 0], xy_locs[:, 1], s=20,
+               facecolors='r', edgecolors='r')
     
     ratio = 1.0
     
@@ -430,20 +467,43 @@ def plot_clusters(cluster_data, loc_data, out, title):
     plt.savefig(out + '/' + title + '.png')
 
 
-def main():
+def test_ripley_clustering():
 
-    path = 'C:/users/mxq76232/Downloads/pictest/rip_test.csv'
+    print('Enter path to localisation file')
+    path = user_input()
 
+    print('Enter folder for things to be saved.')
+    outpath = user_input()
+
+    print('Enter bounding radius.')
+    bound_r = user_input()
+
+    bound_r = int(bound_r)
+
+    print('Enter increment.')
+    increment_r = user_input()
+
+    increment_r = int(increment_r)
+    
     data = load_locs(path)
 
     xy = extract_xy(data)
+    
+    radii = generate_radii(bounding_radius=bound_r,
+                           increment=increment_r)
+    
+    k_values = ripley_k_function(xy, r=radii, br=bound_r)
 
-    radii = generate_radii(bounding_radius=1000, increment=100)
+    l_values = ripley_l_function(k_values=k_values)
 
-    value = ripley_h_function(xy, r=radii, br=1000)
+    h_values = ripley_h_function(l_values=l_values, radii=radii)
 
-    print(value)
+    plot_ripley_h(h_values=h_values, radii=radii, out=outpath, title='h_function')
+
+def main():
+
+    pass
 
 if __name__ == '__main__':
 
-    main()
+    test_ripley_clustering()
