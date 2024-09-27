@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 from scipy.spatial import ConvexHull
 from sklearn.metrics import pairwise_distances
+import cv2 as cv
 import math
 
 def user_input():
@@ -466,6 +467,68 @@ def plot_clusters(cluster_data, loc_data, out, title):
 
     plt.savefig(out + '/' + title + '.png')
 
+## Functions for two-color STORM
+
+def extract_xy_cr(locs):
+
+    return locs[:, 2:4].reshape(-1, 2).astype(np.float32)
+
+def calculate_transformation_matrix(channel1, channel2):
+
+    # Note: this function registers the first channel to the second channel
+    # I.e. it shifts the first channel to the second
+
+    M, inliers = cv.estimateAffinePartial2D(channel1, channel2)
+
+    return M
+
+def register_channel(channel, matrix):
+
+    # Use the first channel
+
+    corrected_channel = cv.transform(np.array([channel]), matrix)
+
+    return corrected_channel.reshape(channel.shape[0], 2)
+
+def compare_channels(channel1, channel2):
+
+    mpl.rcParams['font.family'] = 'sans-serif'
+    mpl.rcParams['font.size'] = 10
+
+    fig, ax = plt.subplots(figsize=(5, 5), dpi=300)
+
+    ax.scatter(channel1[:, 0], channel1[:, 1], s=20,
+               facecolors='b')
+    ax.scatter(channel2[:, 0], channel2[:, 1], s=20,
+               facecolors='r')
+    
+    ratio = 1.0
+
+    x_left, x_right = ax.get_xlim()
+    y_low, y_high = ax.get_ylim()
+    ax.set_aspect(abs((x_right-x_left)/(y_low-y_high)) * ratio)
+
+    ax.tick_params(axis='y', which='major', length=5, direction='out')
+    ax.tick_params(axis='y', which='minor', length=2, direction='out')
+    ax.tick_params(axis='x', which='major', length=5, direction='out')
+    ax.tick_params(axis='x', which='minor', length=2, direction='out')
+
+    ax.xaxis.set_minor_locator(AutoMinorLocator(10))
+    ax.yaxis.set_minor_locator(AutoMinorLocator(10))
+
+    ax.xaxis.label.set_color('black')
+    ax.yaxis.label.set_color('black')
+
+    ax.spines['bottom'].set_color('black')
+    ax.spines['top'].set_color('black')
+    ax.spines['right'].set_color('black')
+    ax.spines['left'].set_color('black')
+    ax.spines['bottom'].set_linewidth(1.0)
+    ax.spines['top'].set_linewidth(1.0)
+    ax.spines['right'].set_linewidth(1.0)
+    ax.spines['left'].set_linewidth(1.0)
+
+    plt.show()
 
 def test_ripley_clustering():
 
@@ -499,6 +562,10 @@ def test_ripley_clustering():
     h_values = ripley_h_function(l_values=l_values, radii=radii)
 
     plot_ripley_h(h_values=h_values, radii=radii, out=outpath, title='h_function')
+
+def test_hdbscan():
+
+    pass
 
 def main():
 
