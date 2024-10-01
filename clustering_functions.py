@@ -169,7 +169,7 @@ def hdbscan(locs, min_n):
     """
 
     # Instantiate and fit
-    hdbscan = HDBSCAN(min_cluster_size=min_n).fit(locs[:, 2:4])
+    hdbscan = HDBSCAN(min_cluster_size=min_n).fit(locs[:, 2:4].reshape(-1, 2))
 
     # DBSCAN labels
     labels = hdbscan.labels_
@@ -207,7 +207,7 @@ def denoise_data(dbscan_data, min_n):
     
     return noiseless_data
 
-def save_dbscan_results(filtered_data, outpath):
+def save_dbscan_results(data, outpath):
 
     """
     Convert dbscan results to dataframe and save as .csv
@@ -225,9 +225,9 @@ def save_dbscan_results(filtered_data, outpath):
             'label',
             'probability']
     
-    dbscan_results_df = pd.DataFrame(data=filtered_data, columns=cols)
+    dbscan_results_df = pd.DataFrame(data=data, columns=cols)
 
-    dbscan_results_df.to_csv(outpath + '/dbscan_output.txt')
+    dbscan_results_df.to_csv(outpath + '/dbscan_output.csv')
 
 def calculate_intensity(points):
 
@@ -565,7 +565,17 @@ def test_ripley_clustering():
 
 def test_hdbscan():
 
-    pass
+    print('Enter path to localisation file')
+    path = user_input()
+
+    print('Enter folder for things to be saved.')
+    outpath = user_input()
+
+    data = load_locs(path=path)
+
+    clusters = hdbscan(locs=data, min_n=4)
+
+    save_dbscan_results(data=clusters, outpath=outpath)
 
 def main():
 
@@ -573,4 +583,4 @@ def main():
 
 if __name__ == '__main__':
 
-    test_ripley_clustering()
+    test_hdbscan()
