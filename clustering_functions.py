@@ -2,9 +2,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from collections import Counter
 from sklearn.cluster import HDBSCAN
+from scipy import stats
 import ripleyk
 import pandas as pd
-import seaborn as sns
 from matplotlib.ticker import AutoMinorLocator
 import matplotlib.pyplot as plt
 import matplotlib as mpl
@@ -39,7 +39,7 @@ def user_input():
         
     return input_text
 
-def load_locs(path):
+def load_locs(path: str):
 
     """
     Extract localisation data from .csv file, preferably from ThunderSTORM
@@ -66,7 +66,9 @@ def generate_radii(bounding_radius, increment):
     of radii for the functions.
     """
 
-    return list(range(0, bounding_radius, increment))
+    radii = list(np.arange(0, bounding_radius, increment))
+
+    return radii[1:]
 
 def ripley_k_function(xy_data, r, br):
 
@@ -157,7 +159,7 @@ def calculate_rmax(h_values, radii):
 
 def save_max_r(outpath, max_r):
 
-    with open(outpath + '/max_r.txt') as f:
+    with open(outpath + '/max_r.txt', 'w') as f:
 
         f.write('The maximum value of r is: ' + str(max_r)
                 + ' nm')
@@ -271,7 +273,7 @@ def analyse_clusters(dbscan_data):
 
     analysis_results = []
 
-    cluster_labels = np.unique(dbscan_data[:, 3])
+    cluster_labels = np.unique(dbscan_data[:, -2])
 
     for label in cluster_labels:
 
@@ -279,11 +281,11 @@ def analyse_clusters(dbscan_data):
 
         cluster_points_xy = cluster_points[:, 0:2]
 
-        intensity = calculate_intensity(cluster_points)
+        intensity = calculate_intensity(cluster_points_xy)
 
-        center_of_mass = calculate_center_of_mass(cluster_points)
+        center_of_mass = calculate_center_of_mass(cluster_points_xy)
 
-        cluster_area = calculate_clust_area(cluster_points)
+        cluster_area = calculate_clust_area(cluster_points_xy)
 
         center = center_of_mass[:, np.newaxis]
         center = center.T
@@ -304,7 +306,7 @@ def filter_clusters(cluster_data):
 
     filtered_clust_data = cluster_data[(cluster_data[:, 3] < 400)]
 
-    return filtered_clust_data[(filtered_clust_data[:, 3] > 0)]
+    return filtered_clust_data[(filtered_clust_data[:, 3] > 20)]
 
 
 def convert_to_dataframe(filt_cluster_data):
@@ -389,7 +391,7 @@ def plot_cluster_statistics(filt_cluster_data, outpath):
     for i in range(2, 5):
 
         plot_histogram(filt_cluster_data[filt_cluster_data.columns[i]],
-                      filt_cluster_data.columns[1], out=outpath)
+                      filt_cluster_data.columns[i], out=outpath)
 
 def make_circles(x, y, r):
 
@@ -471,12 +473,17 @@ def plot_clusters(cluster_data, loc_data, out, title):
 
 def extract_xy_cr(locs):
 
+    """
+    Extract xy locs again but as 32 bit floating integers.
+    """
+
     return locs[:, 2:4].reshape(-1, 2).astype(np.float32)
 
 def calculate_transformation_matrix(channel1, channel2):
 
-    # Note: this function registers the first channel to the second channel
-    # I.e. it shifts the first channel to the second
+    """ Note: this function registers the first channel to the second channel
+    I.e. it shifts the first channel to the second
+    """
 
     M, inliers = cv.estimateAffinePartial2D(channel1, channel2)
 
@@ -490,7 +497,7 @@ def register_channel(channel, matrix):
 
     return corrected_channel.reshape(channel.shape[0], 2)
 
-def compare_channels(channel1, channel2):
+def compare_channels(channel1, channel2, out):
 
     mpl.rcParams['font.family'] = 'sans-serif'
     mpl.rcParams['font.size'] = 10
@@ -528,7 +535,118 @@ def compare_channels(channel1, channel2):
     ax.spines['right'].set_linewidth(1.0)
     ax.spines['left'].set_linewidth(1.0)
 
-    plt.show()
+    plt.savefig(out + '/')
+
+def save_corrected_channels(cor_locs, locs, out):
+
+    cor_data = np.hstack((cor_locs, locs[:, 2:])).reshape(-1, 9)
+
+    np.savetxt(out + '/cor_locs.csv', cor_data,
+               fmt='%.6e', delimiter=',')
+
+def add_channel(locs, channel: int):
+
+    channel_col = np.repeat(channel, locs.shape[0]).reshape(locs.shape[0], 1)
+
+    return np.hstack((locs, channel_col)).reshape(-1, 10)
+
+def calc_counts_with_radius(locs, x0, y0, radii):
+
+    """
+    Calculate number of localisations from a list of increasing radii.
+    """
+
+    loc_counts_with_r = np.zeros((1, len(radii)))
+
+    for i in range(0, len(radii)):
+
+        filtered_locs = locs[((locs[:, 0] - x0)**2 + 
+                                (locs[:, 1] - y0)**2 < radii[i]**2)]
+        
+        loc_counts_with_r[0, i] = filtered_locs.shape[0] + 1
+    
+    return loc_counts_with_r
+
+def calc_loc_distribution(counts, radii):
+
+    """
+    Calculates distribution of number of localisations with increasing radii
+    from a localisation
+    """
+
+    max_r = max(radii)
+
+    cbc = counts / np.max(counts) * (max_r ** 2 / np.array(radii) ** 2)
+
+    return cbc
+
+def calc_all_distributions(channel1_locs, channel2_locs, radii):
+
+    """
+    Combines the previous two functions to calculate distributions along
+    an increasing radius for all distributions of a particular channel.
+    """
+
+    dist_ch1 = []
+
+    dist_ch2 = []
+
+    # Loop through all localisations
+
+    for i in range(0, channel1_locs.shape[0]):
+
+        x0, y0 = channel1_locs[i, 0], channel1_locs[i, 1]
+
+        # Channel 1
+        ch1_counts = calc_counts_with_radius(
+            locs=channel1_locs, x0=x0, y0=y0, radii=radii
+        )
+
+        dist_ch1.append(
+            calc_loc_distribution(counts=ch1_counts, radii=radii)
+        )
+
+        # Channel 2
+        ch2_counts = calc_counts_with_radius(
+            locs=channel2_locs, x0=x0, y0=y0, radii=radii
+        )
+
+        dist_ch2.append(
+            calc_loc_distribution(counts=ch2_counts, radii=radii)
+        )
+    
+    return np.vstack(dist_ch1).reshape(-1, len(radii)), np.vstack(dist_ch2).reshape(-1, len(radii))
+
+def calc_pearson_cor_coeff(ch1_dist, ch2_dist):
+
+    """
+    Calculate Pearson correlation coefficients on a row-by-row basis
+    for the distributions of channel 1 to itself and to channel 2. I.e, 
+    between D_AA(r) and D_AB(r)
+    """
+
+    pearson_cor_coeffs = np.zeros((ch1_dist.shape[0], 1))
+
+    pearson_cor_coeffs = stats.pearsonr(ch1_dist, ch2_dist, axis=1).statistic
+
+    return pearson_cor_coeffs.reshape(ch1_dist.shape[0], 1)
+
+def add_pearson_coeffs(locs, cor_coeffs):
+
+    """
+    Add correlation coefficients to localisation data.
+    """
+
+    return np.hstack((locs, cor_coeffs)).reshape(-1, 11)
+
+def save_locs_pearsons(processed_data, out):
+
+    """
+    Save localisations with correlation coefficients as .csv file.
+    """
+
+    np.savetxt(out + '/locs_with_pearson.csv',
+               processed_data, fmt='%.6e', delimiter=',')
 
 def test_ripley_clustering():
 
@@ -539,14 +657,10 @@ def test_ripley_clustering():
     outpath = user_input()
 
     print('Enter bounding radius.')
-    bound_r = user_input()
-
-    bound_r = int(bound_r)
+    bound_r = float(user_input())
 
     print('Enter increment.')
-    increment_r = user_input()
-
-    increment_r = int(increment_r)
+    increment_r = float(user_input())
     
     data = load_locs(path)
 
@@ -563,6 +677,10 @@ def test_ripley_clustering():
 
     plot_ripley_h(h_values=h_values, radii=radii, out=outpath, title='h_function')
 
+    rmax = calculate_rmax(h_values=h_values, radii=radii)
+
+    save_max_r(outpath=outpath, max_r=rmax)
+
 def test_hdbscan():
 
     print('Enter path to localisation file')
@@ -576,6 +694,20 @@ def test_hdbscan():
     clusters = hdbscan(locs=data, min_n=4)
 
     save_dbscan_results(data=clusters, outpath=outpath)
+
+    dbscan_filt = denoise_data(dbscan_data=clusters, min_n=4)
+
+    save_dbscan_results(data=dbscan_filt, outpath=outpath)
+
+    clust_analysed = analyse_clusters(dbscan_data=dbscan_filt)
+
+    clust_filt = filter_clusters(cluster_data=clust_analysed)
+
+    clust_filt_df = convert_to_dataframe(filt_cluster_data=clust_filt)
+
+    save_cluster_analysis(filt_cluster_data=clust_filt_df, outpath=outpath)
+
+    plot_cluster_statistics(filt_cluster_data=clust_filt_df, outpath=outpath)
 
 def main():
 
