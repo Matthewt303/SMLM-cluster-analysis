@@ -11,9 +11,12 @@ import matplotlib as mpl
 from scipy.spatial import ConvexHull
 from sklearn.metrics import pairwise_distances
 import cv2 as cv
-import math
 
 def user_input():
+
+    """
+    Accepts user input.
+    """
 
     counter = 0
 
@@ -56,7 +59,7 @@ def extract_xy(locs):
     Extract xy localisations
     """
 
-    return locs[:, 2:4]
+    return locs[:, 2:4].reshape(-1, 2)
 
 def generate_radii(bounding_radius, increment):
 
@@ -155,9 +158,17 @@ def plot_ripley_h(h_values, radii, out, title):
 
 def calculate_rmax(h_values, radii):
 
+    """
+    Calculate the radius at which Ripley's H-function is at a maximum
+    """
+
     return radii[h_values.argmax()]
 
 def save_max_r(outpath, max_r):
+
+    """
+    Save the value of the radius at which Ripley's H-function is at a maximum
+    """
 
     with open(outpath + '/max_r.txt', 'w') as f:
 
@@ -167,7 +178,8 @@ def save_max_r(outpath, max_r):
 def hdbscan(locs, min_n):
 
     """"
-    HDBSCAN clustering of localization data
+    HDBSCAN clustering of localization data. Returns the localisation data
+    with the cluster assignments for each localisation.
     """
 
     # Instantiate and fit
@@ -188,6 +200,8 @@ def denoise_data(dbscan_data, min_n):
 
     """
     Removes clusters below a minimum localizations threshold and noise.
+    Returns localisation data with 'noise clusters' and small clusters
+    discarded.
     """
 
     # Remove noise
@@ -245,7 +259,7 @@ def calculate_center_of_mass(points):
     Calculates cluster centroid.
     """
 
-    return np.mean(points, axis=0)
+    return np.mean(points, axis=0).reshape(1, 2)
 
 def calculate_clust_area(points):
 
@@ -277,9 +291,9 @@ def analyse_clusters(dbscan_data):
 
     for label in cluster_labels:
 
-        cluster_points = dbscan_data[(dbscan_data[:, 3] == label)]
+        cluster_points = dbscan_data[(dbscan_data[:, -2] == label)]
 
-        cluster_points_xy = cluster_points[:, 0:2]
+        cluster_points_xy = extract_xy(cluster_points)
 
         intensity = calculate_intensity(cluster_points_xy)
 
@@ -287,10 +301,7 @@ def analyse_clusters(dbscan_data):
 
         cluster_area = calculate_clust_area(cluster_points_xy)
 
-        center = center_of_mass[:, np.newaxis]
-        center = center.T
-
-        cluster_radius = calculate_radius(cluster_points_xy, center=center)
+        cluster_radius = calculate_radius(cluster_points_xy, center=center_of_mass)
 
         analysis_results.append([center_of_mass[0], center_of_mass[1], cluster_area,
                                  cluster_radius, intensity, label])
@@ -329,6 +340,10 @@ def convert_to_dataframe(filt_cluster_data):
     return cluster_data_df
     
 def save_cluster_analysis(filt_cluster_data, outpath):
+
+    """
+    Save results of cluster analysis as a .csv file.
+    """
 
     filt_cluster_data.to_csv(outpath + '/dbscan_analysis.csv', sep=',')
 
