@@ -433,6 +433,31 @@ def plot_cluster_statistics(filt_cluster_data, outpath):
         plot_histogram(filt_cluster_data[filt_cluster_data.columns[i]],
                       filt_cluster_data.columns[i], out=outpath)
 
+def calculate_statisitcs(filt_cluster_data):
+
+    clust_statistics = {}
+
+    for i in range(2, len(filt_cluster_data.columns) - 1):
+
+        statistics = {}
+
+        statistics['Mean'] = np.mean(filt_cluster_data[filt_cluster_data.columns[i]])
+
+        statistics['Median'] = np.median(filt_cluster_data[filt_cluster_data.columns[i]])
+
+        statistics['Standard deviation'] = np.std(filt_cluster_data[filt_cluster_data.columns[i]])
+
+        clust_statistics[filt_cluster_data.columns[i]] = statistics
+
+    return clust_statistics
+
+def save_statistics(cluster_statisitcs, out):
+
+    with open(out + '/cluster_stats.txt', 'w') as f:
+        print(cluster_statisitcs, file=f)
+
+## Cluster visualisation
+
 def make_circles(x, y, r):
 
     circles = [plt.Circle((xi, yi), radius=c, linewidth=0)
@@ -785,15 +810,15 @@ def two_color_analysis():
     
     green_pearson = calc_pearson_cor_coeff(ch1_dist=gg_dist, ch2_dist=gr_dist)
 
-    save_locs_pearsons(add_pearson_coeffs(
-        locs=green, cor_coeffs=green_pearson), out=out)
+    colocs = calc_coloc_values(pearson=green_pearson, ch1_locs=green,
+                               ch2_locs=red_locs, radii=radii)
+
+    save_locs_colocs(add_coloc_values(locs=green, coloc_values=colocs),
+                       out=out)
     
     rr_dist, rg_dist = calc_all_distributions(channel1_locs=red,
                                               channel2_locs=green,
                                               radii=radii)
-    
-    
-
 
 def test_hdbscan():
 
@@ -820,6 +845,10 @@ def test_hdbscan():
     save_cluster_analysis(filt_cluster_data=clust_filt_df, outpath=outpath)
 
     plot_cluster_statistics(filt_cluster_data=clust_filt_df, outpath=outpath)
+
+    cluster_stats = calculate_statisitcs(filt_cluster_data=clust_filt_df)
+
+    save_statistics(cluster_stats)
 
 def main():
 
