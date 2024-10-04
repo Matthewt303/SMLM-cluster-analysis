@@ -654,9 +654,9 @@ def calc_all_distributions(channel1_locs, channel2_locs, radii):
     an increasing radius for all distributions of a particular channel.
     """
 
-    dist_ch1 = []
+    dist_ch1 = np.zeros((channel1_locs.shape[0], len(radii)))
 
-    dist_ch2 = []
+    dist_ch2 = np.zeros((channel1_locs.shape[0], len(radii)))
 
     # Loop through all localisations
 
@@ -669,20 +669,16 @@ def calc_all_distributions(channel1_locs, channel2_locs, radii):
             locs=channel1_locs, x0=x0, y0=y0, radii=radii
         )
 
-        dist_ch1.append(
-            calc_loc_distribution(counts=ch1_counts, radii=radii)
-        )
+        dist_ch1 = calc_loc_distribution(counts=ch1_counts, radii=radii)
 
         # Channel 2
         ch2_counts = calc_counts_with_radius(
             locs=channel2_locs, x0=x0, y0=y0, radii=radii
         )
 
-        dist_ch2.append(
-            calc_loc_distribution(counts=ch2_counts, radii=radii)
-        )
+        dist_ch2 = calc_loc_distribution(counts=ch2_counts, radii=radii)
     
-    return np.vstack(dist_ch1).reshape(-1, len(radii)), np.vstack(dist_ch2).reshape(-1, len(radii))
+    return dist_ch1, dist_ch2
 
 def calc_pearson_cor_coeff(ch1_dist, ch2_dist):
 
