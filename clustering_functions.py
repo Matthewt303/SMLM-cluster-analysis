@@ -223,13 +223,15 @@ def denoise_data(dbscan_data, min_n):
     
     return noiseless_data
 
-def save_dbscan_results(data, outpath):
+def save_dbscan_results(data, n_channels, outpath):
 
     """
     Convert dbscan results to dataframe and save as .csv
     """
 
-    cols = ['id',
+    if n_channels == 1:
+    
+        cols = ['id',
             'frame',
             'x [nm]',
             'y [nm]',
@@ -238,6 +240,22 @@ def save_dbscan_results(data, outpath):
             'offset [photons]',
             'bkgstd [photons]',
             'uncertainty [nm]',
+            'label',
+            'probability']
+    
+    else:
+
+        cols = ['id',
+            'frame',
+            'x [nm]',
+            'y [nm]',
+            'sigma [nm]',
+            'intensity [photons]',
+            'offset [photons]',
+            'bkgstd [photons]',
+            'uncertainty [nm]',
+            'Channel',
+            'Degree of colocalisation'
             'label',
             'probability']
     
@@ -261,13 +279,17 @@ def calculate_center_of_mass(points):
 
     return np.mean(points, axis=0).reshape(1, 2)
 
-def calculate_clust_area(points):
+def calculate_clust_area_perim(points):
 
     """
-    Calculates cluster area with the Convexhull method.
+    Calculates cluster area and perimeter with the Convexhull method.
     """
 
-    return ConvexHull(points).volume
+    return ConvexHull(points).volume, ConvexHull(points).area
+
+def calculate_circularity(perimeter, area):
+
+    return 4 * np.pi * area / perimeter**2 
 
 def calculate_radius(points, center):
 
@@ -299,14 +321,16 @@ def analyse_clusters(dbscan_data):
 
         center_of_mass = calculate_center_of_mass(cluster_points_xy)
 
-        cluster_area = calculate_clust_area(cluster_points_xy)
+        cluster_area, cluster_perim = calculate_clust_area_perim(cluster_points_xy)
 
         cluster_radius = calculate_radius(cluster_points_xy, center=center_of_mass)
 
+        circularity = calculate_circularity(perimeter=cluster_perim, area=cluster_area)
+
         analysis_results.append([center_of_mass[0], center_of_mass[1], cluster_area,
-                                 cluster_radius, intensity, label])
+                                 cluster_radius, circularity, intensity, label])
         
-    return np.array(analysis_results).reshape(-1, 6)
+    return np.array(analysis_results).reshape(-1, 7)
 
 def filter_clusters(cluster_data):
 
@@ -331,6 +355,7 @@ def convert_to_dataframe(filt_cluster_data):
         'y[nm]',
         'Area [nm^2]',
         'Radius [nm]',
+        'Circularity',
         'Intensity',
         'label'
     ]
@@ -403,7 +428,7 @@ def plot_cluster_statistics(filt_cluster_data, outpath):
     Plots and saves histograms for cluster intensity, area, and radius.
     """
 
-    for i in range(2, 5):
+    for i in range(2, filt_cluster_data.shape[1] - 1):
 
         plot_histogram(filt_cluster_data[filt_cluster_data.columns[i]],
                       filt_cluster_data.columns[i], out=outpath)
@@ -558,6 +583,8 @@ def save_corrected_channels(cor_locs, locs, out):
 
     np.savetxt(out + '/cor_locs.csv', cor_data,
                fmt='%.6e', delimiter=',')
+    
+    return cor_data
 
 def add_channel(locs, channel: int):
 
@@ -575,8 +602,8 @@ def calc_counts_with_radius(locs, x0, y0, radii):
 
     for i in range(0, len(radii)):
 
-        filtered_locs = locs[((locs[:, 0] - x0)**2 + 
-                                (locs[:, 1] - y0)**2 < radii[i]**2)]
+        filtered_locs = locs[((locs[:, 2] - x0)**2 + 
+                                (locs[:, 3] - y0)**2 < radii[i]**2)]
         
         loc_counts_with_r[0, i] = filtered_locs.shape[0] + 1
     
@@ -610,7 +637,7 @@ def calc_all_distributions(channel1_locs, channel2_locs, radii):
 
     for i in range(0, channel1_locs.shape[0]):
 
-        x0, y0 = channel1_locs[i, 0], channel1_locs[i, 1]
+        x0, y0 = channel1_locs[i, 2], channel1_locs[i, 3]
 
         # Channel 1
         ch1_counts = calc_counts_with_radius(
@@ -646,15 +673,35 @@ def calc_pearson_cor_coeff(ch1_dist, ch2_dist):
 
     return pearson_cor_coeffs.reshape(ch1_dist.shape[0], 1)
 
-def add_pearson_coeffs(locs, cor_coeffs):
+def calculate_nneighbor_dist(ch1_locs, ch2_locs, radii):
+
+    distances = np.zeros((ch1_locs.shape[0], 1))
+
+    for i in range(0, ch1_locs.shape[0]):
+
+        x0, y0 = ch1_locs[i, 0], ch1_locs[i, 1]
+
+        distances[i, 0] = np.min(np.sqrt((ch2_locs[:, 0] - x0)**2 + 
+                                  (ch2_locs[:, 1] - y0)**2))
+    
+    return distances / max(radii)
+
+def calc_coloc_values(pearson, ch1_locs, ch2_locs, radii):
+
+    nearest_neighbors = calculate_nneighbor_dist(ch1_locs,
+                                                 ch2_locs, radii)
+    
+    return pearson * np.exp(nearest_neighbors)
+
+def add_coloc_values(locs, coloc_values):
 
     """
     Add correlation coefficients to localisation data.
     """
 
-    return np.hstack((locs, cor_coeffs)).reshape(-1, 11)
+    return np.hstack((locs, coloc_values)).reshape(-1, 11)
 
-def save_locs_pearsons(processed_data, out):
+def save_locs_colocs(processed_data, out):
 
     """
     Save localisations with correlation coefficients as .csv file.
@@ -662,6 +709,17 @@ def save_locs_pearsons(processed_data, out):
 
     np.savetxt(out + '/locs_with_pearson.csv',
                processed_data, fmt='%.6e', delimiter=',')
+
+def combine_channel_locs(ch1_locs, ch2_locs):
+
+    """
+    Combines the localisations of channel one, and two. Recommended to do
+    this following colocalisation analysis.
+    """
+
+    return np.vstack((ch1_locs, ch2_locs))
+
+## Main functions
 
 def test_ripley_clustering():
 
@@ -696,6 +754,47 @@ def test_ripley_clustering():
 
     save_max_r(outpath=outpath, max_r=rmax)
 
+def two_color_analysis():
+
+    print('Enter path to first channel.')
+    green_ch_path = user_input()
+
+    print('Enter path to second channel.')
+    red_ch_path = user_input()
+
+    print('Where you want things saved.')
+    out = user_input()
+
+    green_locs, red_locs = load_locs(path=green_ch_path), load_locs(path=red_ch_path)
+
+    green_xy, red_xy = extract_xy_cr(locs=green_locs), extract_xy_cr(locs=red_locs)
+
+    matrix = calculate_transformation_matrix(channel1=green_xy, channel2=red_xy)
+
+    green_xy_reg = register_channel(channel=green_xy, matrix=matrix)
+
+    green_locs_cor = save_corrected_channels(cor_locs=green_xy_reg, locs=green_locs, out=out)
+
+    green, red = add_channel(locs=green_locs_cor, channel=1), add_channel(locs=red_locs, channel=2)
+
+    radii = generate_radii(bounding_radius=3000, increment=30)
+
+    gg_dist, gr_dist = calc_all_distributions(channel1_locs=green,
+                                              channel2_locs=red,
+                                              radii=radii)
+    
+    green_pearson = calc_pearson_cor_coeff(ch1_dist=gg_dist, ch2_dist=gr_dist)
+
+    save_locs_pearsons(add_pearson_coeffs(
+        locs=green, cor_coeffs=green_pearson), out=out)
+    
+    rr_dist, rg_dist = calc_all_distributions(channel1_locs=red,
+                                              channel2_locs=green,
+                                              radii=radii)
+    
+    
+
+
 def test_hdbscan():
 
     print('Enter path to localisation file')
@@ -708,11 +807,9 @@ def test_hdbscan():
 
     clusters = hdbscan(locs=data, min_n=4)
 
-    save_dbscan_results(data=clusters, outpath=outpath)
+    save_dbscan_results(data=clusters, n_channels=1, outpath=outpath)
 
     dbscan_filt = denoise_data(dbscan_data=clusters, min_n=4)
-
-    save_dbscan_results(data=dbscan_filt, outpath=outpath)
 
     clust_analysed = analyse_clusters(dbscan_data=dbscan_filt)
 
