@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from numba import jit
 from collections import Counter
 from sklearn.cluster import HDBSCAN
 from scipy import stats
@@ -617,6 +618,7 @@ def add_channel(locs, channel: int):
 
     return np.hstack((locs, channel_col)).reshape(-1, 10)
 
+@jit(nopython=True, nogil=True, cache=False)
 def calc_counts_with_radius(locs, x0, y0, radii):
 
     """
@@ -634,6 +636,7 @@ def calc_counts_with_radius(locs, x0, y0, radii):
     
     return loc_counts_with_r
 
+@jit(nopython=True, nogil=True, cache=False)
 def calc_loc_distribution(counts, radii):
 
     """
@@ -647,6 +650,7 @@ def calc_loc_distribution(counts, radii):
 
     return cbc
 
+@jit(nopython=True, nogil=True, cache=False)
 def calc_all_distributions(channel1_locs, channel2_locs, radii):
 
     """
@@ -694,6 +698,7 @@ def calc_pearson_cor_coeff(ch1_dist, ch2_dist):
 
     return pearson_cor_coeffs.reshape(ch1_dist.shape[0], 1)
 
+@jit(nopython=True, nogil=True, cache=False)
 def calculate_nneighbor_dist(ch1_locs, ch2_locs, radii):
 
     distances = np.zeros((ch1_locs.shape[0], 1))
@@ -707,6 +712,7 @@ def calculate_nneighbor_dist(ch1_locs, ch2_locs, radii):
     
     return distances / max(radii)
 
+@jit(nopython=True, nogil=True, cache=False)
 def calc_coloc_values(pearson, ch1_locs, ch2_locs, radii):
 
     nearest_neighbors = calculate_nneighbor_dist(ch1_locs,
