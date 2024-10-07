@@ -627,12 +627,15 @@ def calc_counts_with_radius(locs, x0, y0, radii):
 
     loc_counts_with_r = np.zeros((1, len(radii)))
 
-    for i in range(0, len(radii)):
+    for i in range(1, len(radii)):
 
-        filtered_locs = locs[((locs[:, 2] - x0)**2 + 
+        filt_locs = locs[((locs[:, 2] - x0)**2 + 
                                 (locs[:, 3] - y0)**2 < radii[i]**2)]
         
-        loc_counts_with_r[0, i] = filtered_locs.shape[0] + 1
+        filt_locs = filt_locs[((filt_locs[:, 2] - x0)**2 + 
+                                (filt_locs[:, 3] - y0)**2 > radii[i-1]**2)]
+        
+        loc_counts_with_r[0, i] = filt_locs.shape[0] + 1
     
     return loc_counts_with_r
 
@@ -646,7 +649,7 @@ def calc_loc_distribution(counts, radii):
 
     max_r = max(radii)
 
-    cbc = counts / np.max(counts) * (max_r ** 2 / np.array(radii) ** 2)
+    cbc = counts / np.sum(counts) * (max_r ** 2 / np.array(radii) ** 2)
 
     return cbc
 
@@ -684,7 +687,7 @@ def calc_all_distributions(channel1_locs, channel2_locs, radii):
     
     return dist_ch1, dist_ch2
 
-def calc_pearson_cor_coeff(ch1_dist, ch2_dist):
+def calc_spearman_cor_coeff(ch1_dist, ch2_dist):
 
     """
     Calculate Pearson correlation coefficients on a row-by-row basis
@@ -692,11 +695,15 @@ def calc_pearson_cor_coeff(ch1_dist, ch2_dist):
     between D_AA(r) and D_AB(r)
     """
 
-    pearson_cor_coeffs = np.zeros((ch1_dist.shape[0], 1))
+    spearman_cor_coeffs = np.zeros((ch1_dist.shape[0], 1))
 
-    pearson_cor_coeffs = stats.pearsonr(ch1_dist, ch2_dist, axis=1).statistic
+    for i in range(0, ch1_dist.shape[0]):
 
-    return pearson_cor_coeffs.reshape(ch1_dist.shape[0], 1)
+        rho = stats.spearmanr(ch1_dist[i, :], ch2_dist[i, :]).statistic
+
+        spearman_cor_coeffs[i, 0] = rho
+
+    return spearman_cor_coeffs.reshape(ch1_dist.shape[0], 1)
 
 @jit(nopython=True, nogil=True, cache=False)
 def calculate_nneighbor_dist(ch1_locs, ch2_locs, radii):
@@ -713,12 +720,12 @@ def calculate_nneighbor_dist(ch1_locs, ch2_locs, radii):
     return distances / max(radii)
 
 @jit(nopython=True, nogil=True, cache=False)
-def calc_coloc_values(pearson, ch1_locs, ch2_locs, radii):
+def calc_coloc_values(spearman, ch1_locs, ch2_locs, radii):
 
     nearest_neighbors = calculate_nneighbor_dist(ch1_locs,
                                                  ch2_locs, radii)
     
-    return pearson * np.exp(nearest_neighbors)
+    return spearman * np.exp(nearest_neighbors)
 
 def add_coloc_values(locs, coloc_values):
 
@@ -810,9 +817,9 @@ def two_color_analysis():
                                               channel2_locs=red,
                                               radii=radii)
     
-    green_pearson = calc_pearson_cor_coeff(ch1_dist=gg_dist, ch2_dist=gr_dist)
+    green_spearman = calc_spearman_cor_coeff(ch1_dist=gg_dist, ch2_dist=gr_dist)
 
-    colocs = calc_coloc_values(pearson=green_pearson, ch1_locs=green,
+    colocs = calc_coloc_values(spearman=green_spearman, ch1_locs=green,
                                ch2_locs=red_locs, radii=radii)
 
     save_locs_colocs(add_coloc_values(locs=green, coloc_values=colocs),
