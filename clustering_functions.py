@@ -227,6 +227,11 @@ def hdbscan(locs, min_n):
     """"
     HDBSCAN clustering of localization data. Returns the localisation data
     with the cluster assignments for each localisation.
+
+    In: locs---localization table (numpy array)
+    min_n---minimum number of points for cluster classification (int)
+
+    Out: localization table---with cluster classification and probabilities.
     """
 
     # Instantiate and fit
@@ -249,6 +254,10 @@ def denoise_data(dbscan_data, min_n):
     Removes clusters below a minimum localizations threshold and noise.
     Returns localisation data with 'noise clusters' and small clusters
     discarded.
+
+    In: dbscan_data---localization table with dbscan data (np array)
+    min_n---minimum number of points for a cluster to be retained
+    following filtering (int)
     """
 
     # Remove noise
@@ -273,7 +282,14 @@ def denoise_data(dbscan_data, min_n):
 def save_dbscan_results(data, n_channels, outpath):
 
     """
-    Convert dbscan results to dataframe and save as .csv
+    Convert dbscan results to dataframe and save as .csv. Columns change
+    depending on whether data include localizations from one channel or 
+    two channels. 
+
+    In: data---localizations with DBSCAN cluster classification.
+    n_channels---the number of channels. One for single-color STORM data,
+    two for two-color STORM, etc. (int)
+    outpath---folder where results will be saved (str).
     """
 
     if n_channels == 1:
@@ -314,6 +330,11 @@ def calculate_intensity(points):
 
     """
     Calculates cluster intensity, i.e. how many localisations per cluster.
+
+    In: points---xy localisations (np array)
+
+    Out: the number of xy localisations, indicator of cluster intensity.
+    Not to be confused with fluorescent intensity
     """
 
     return np.size(points, axis=0)
@@ -322,6 +343,10 @@ def calculate_center_of_mass(points):
 
     """
     Calculates cluster centroid.
+
+    In: xy localisations (numpy array)
+
+    Out: xy coordinate of the center of the cluster.
     """
 
     return np.mean(points, axis=0).reshape(1, 2)
@@ -330,6 +355,13 @@ def calculate_clust_area_perim(points):
 
     """
     Calculates cluster area and perimeter with the Convexhull method.
+
+    In: xy localisations (np array)
+
+    Out: 'volume' enclosed by points. For 2D data, the volume corresponds
+    to the area.
+    'Area' enclosed by points. For 2D data, the area corresponds to the
+    perimeter
     """
 
     return ConvexHull(points).volume, ConvexHull(points).area
@@ -338,6 +370,11 @@ def calculate_circularity(perimeter, area):
 
     """
     Calculates circularity by taking the ratio of the area to the perimeter.
+
+    In: perimeter---cluster perimeter (float)
+    area---cluster area (float)
+
+    Out: circularity of cluster (float)
     """
 
     return 4 * np.pi * area / perimeter**2 
@@ -347,6 +384,12 @@ def calculate_radius(points, center):
     """
     Radius calculation. First calculates the pairwise distance of all
     cluster points from the centroid then selects the maximum.
+
+    In: points---cluster xy localisations (np array)
+    center---xy coordinates of cluster center
+
+    Out: radius of cluster calculated by extracting the maximum of
+    all pairwise distances.
     """
     
     return np.max(pairwise_distances(points, center))
@@ -356,6 +399,11 @@ def analyse_clusters(dbscan_data):
     """
     This function loops through each cluster label, extracts the xy localisations,
     then calculates cluster intensity, area, and radius.
+
+    In: dbscan_data---localization table with dbscan data (np array)
+
+    Out: n x 7 table containing the centroid, cluster area, cluster radius,
+    cluster circularity, cluster intensity, and cluster label (np array)
     """
 
     analysis_results = []
@@ -387,6 +435,10 @@ def filter_clusters(cluster_data):
 
     """
     Remove clusters with very large radii and ensure no values are nan.
+
+    In: cluster_data---table with cluster statisitcs (np array)
+
+    Out: filtered cluster data (np array)
     """
     cluster_data = cluster_data[~np.isnan(cluster_data).any(axis=1), :]
 
