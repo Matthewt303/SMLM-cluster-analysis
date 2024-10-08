@@ -451,6 +451,11 @@ def convert_to_dataframe(filt_cluster_data):
 
     """
     Converts cluster analysis results to a dataframe.
+
+    In: filt_cluster_data---table containing cluster statisitcs filtered
+    by radius size (np array).
+
+    Out: the same but as a pandas dataframe.
     """
 
     cols = [
@@ -479,6 +484,12 @@ def plot_histogram(data, title, out):
 
     """
     Plots a histogram for a column of data.
+
+    In: data---column of a data describing a phenomenon (np array).
+    title---name to give the plot (str)
+    out---folder where plot will be saved (str)
+
+    Out: no output but image of plot will be saved in the specified folder.
     """
 
     plt.ioff()
@@ -529,6 +540,11 @@ def plot_cluster_statistics(filt_cluster_data, outpath):
 
     """
     Plots and saves histograms for cluster intensity, area, and radius.
+
+    In: filt_cluster_data---table with statistics for all clusters (np array)
+    outpath---path to folder where plots will be saved (str)
+
+    Out: None but four plot should be saved in the specified folder.
     """
 
     for i in range(2, filt_cluster_data.shape[1] - 1):
@@ -643,6 +659,10 @@ def extract_xy_cr(locs):
 
     """
     Extract xy locs again but as 32 bit floating integers.
+
+    In: locs---localisation table (np array)
+
+    Out: xy localisations (np array, 32-bit floats)
     """
 
     return locs[:, 2:4].reshape(-1, 2).astype(np.float32)
@@ -651,6 +671,12 @@ def calculate_transformation_matrix(channel1, channel2):
 
     """ Note: this function registers the first channel to the second channel
     I.e. it shifts the first channel to the second
+
+    In: channel1---xy localisations from one channel (np array)
+    channel2---xy localisations from the second channel (np array)
+
+    Out: M---a 2x3 affine matrix that translates channel 1 to channel 2
+    (np array)
     """
 
     M, inliers = cv.estimateAffinePartial2D(channel1, channel2)
