@@ -685,6 +685,20 @@ def calculate_transformation_matrix(channel1, channel2):
 
 def register_channel(channel, matrix):
 
+    """
+    This function takes a transformation matrix, applies the matrix
+    to the localisations of one channel, thus correcting for chromatic
+    aberrations. Usage note: if the order for calculating the matrix was
+    green, red then input the green channel into this function. If it was
+    the other way around then input the red channel.
+
+    In: channel---the xy localisations of a particular channel (np array)
+    matrix---the transformation matrix (2x3 np array)
+
+    Out: corrected_channel---xy localisations of a particular channel following
+    transformation/translation using the input matrix (np array)
+    """
+
     # Use the first channel
 
     corrected_channel = cv.transform(np.array([channel]), matrix)
@@ -692,6 +706,18 @@ def register_channel(channel, matrix):
     return corrected_channel.reshape(channel.shape[0], 2)
 
 def compare_channels(channel1, channel2, out):
+
+    """
+    This function plots the xy-localisations of channel 1 and channel 2
+    as a scatter plot and saves the plot in a specified folder.
+
+    In: channel1---xy localisations of one channel (np array)
+    channel2---xy localisations of second channel (np array)
+    out---output folder where plot will be saved (str)
+
+    Out: None but the plot should be saved as a .png file in the 
+    output folder.
+    """
 
     mpl.rcParams['font.family'] = 'sans-serif'
     mpl.rcParams['font.size'] = 10
@@ -729,18 +755,54 @@ def compare_channels(channel1, channel2, out):
     ax.spines['right'].set_linewidth(1.0)
     ax.spines['left'].set_linewidth(1.0)
 
-    plt.savefig(out + '/')
+    plt.savefig(out + '/loc_comparison.png')
 
 def save_corrected_channels(cor_locs, locs, out):
 
+    """
+    This function combines the registered xy localisations with the
+    rest of the localisation table and saves it as a .csv file. Note:
+    this function probably needs to be refactored to save it as a dataframe.
+
+    In: cor_locs---registered xy localisations (np array)
+    locs---the full localisation table (np array)
+    out---user-specified output folder (str)
+
+    Out: cor_data---localisation table with registered xy localisations.
+    A .csv file is also saved in the specified output folder.
+    """
+
     cor_data = np.hstack((cor_locs, locs[:, 2:])).reshape(-1, 9)
 
-    np.savetxt(out + '/cor_locs.csv', cor_data,
-               fmt='%.6e', delimiter=',')
+    cols = ['id',
+            'frame',
+            'x [nm]',
+            'y [nm]',
+            'sigma [nm]',
+            'intensity [photons]',
+            'offset [photons]',
+            'bkgstd [photons]',
+            'uncertainty [nm]'
+            ]
+
+    locs_df = pd.DataFrame(data=cor_data, columns=cols)
+
+    locs_df.to_csv(out + '/corrected_locs.csv')
     
     return cor_data
 
 def add_channel(locs, channel: int):
+
+    """
+    This function adds a column to specify the appropriate channel
+    to the localisation table.
+
+    In: locs---localisation table (np array)
+    channel---the wavelength of emission (int)
+
+    Out: localisation table with additional column that specifies the 
+    channel.
+    """
 
     channel_col = np.repeat(channel, locs.shape[0]).reshape(locs.shape[0], 1)
 
@@ -751,6 +813,14 @@ def calc_counts_with_radius(locs, x0, y0, radii):
 
     """
     Calculate number of localisations from a list of increasing radii.
+
+    In: locs---localisation table (np array)
+    x0---x-coordinate of circle center (float or int)
+    y0---y-coordinate of circle center (float or int)
+    radii---increasing radii specifying a circle (list of float)
+
+    Out: loc_counts_with_r---the number of localisations within circles
+    of varying radii (np array of int)
     """
 
     loc_counts_with_r = np.zeros((1, len(radii)))
@@ -772,7 +842,12 @@ def calc_loc_distribution(counts, radii):
 
     """
     Calculates distribution of number of localisations with increasing radii
-    from a localisation
+    from a localisation.
+
+    In: counts---the number of localisations at various radii (np array)
+    radii---circle radii (list of floats)
+
+    Out: cbc---coordinate-based colocalisation (np array)
     """
 
     max_r = max(radii)
@@ -787,6 +862,13 @@ def calc_all_distributions(channel1_locs, channel2_locs, radii):
     """
     Combines the previous two functions to calculate distributions along
     an increasing radius for all distributions of a particular channel.
+
+    In: channel1_locs---localisation table for a particular channel (np array)
+    channel2_locs---localisation table for second channel (np array)
+    radii---incrementally increasing radii (list of floats)
+
+    Out: dist_ch1---distribution of cbc values for channel 1 relative to channel 2
+    dist_ch2---distribution of cbc values for channel 2 relative to channel 1
     """
 
     dist_ch1 = np.zeros((channel1_locs.shape[0], len(radii)))
