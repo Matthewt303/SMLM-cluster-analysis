@@ -900,9 +900,19 @@ def calc_all_distributions(channel1_locs, channel2_locs, radii):
 def calc_spearman_cor_coeff(ch1_dist, ch2_dist):
 
     """
-    Calculate Pearson correlation coefficients on a row-by-row basis
+    Calculate Spearman correlation coefficients on a row-by-row basis
     for the distributions of channel 1 to itself and to channel 2. I.e, 
-    between D_AA(r) and D_AB(r)
+    between D_AA(r) and D_AB(r).
+
+    In: ch1_dist---the distribution of the number of localisations
+    for all localisations of a particular channel wrt to itself
+    (np array)
+    ch2_dist---the distribution of the number of localisations for
+    all localisations of a particular channel wrt to another channel
+    (np array)
+
+    Out: spearman_cor_coeffs---spearman correlation coefficients for 
+    all localisations (np array)
     """
 
     spearman_cor_coeffs = np.zeros((ch1_dist.shape[0], 1))
@@ -918,6 +928,21 @@ def calc_spearman_cor_coeff(ch1_dist, ch2_dist):
 @jit(nopython=True, nogil=True, cache=False)
 def calculate_nneighbor_dist(ch1_locs, ch2_locs, radii):
 
+    """
+    Calculate the nearest neighbours for a particular localisation
+    and find the shortest distance between a localisation of channel 1
+    to a localisation of channel 2. Overall, this function 'weighs'
+    the spearman correlation coefficients by the distances from one
+    localisation to another belonging to another species.
+
+    In: channel1_locs---localisation table for a particular channel (np array)
+    channel2_locs---localisation table for second channel (np array)
+    radii---incrementally increasing radii (list of floats)
+
+    Out: distances weighted by maximum radius (np array)
+
+    """
+
     distances = np.zeros((ch1_locs.shape[0], 1))
 
     for i in range(0, ch1_locs.shape[0]):
@@ -932,33 +957,78 @@ def calculate_nneighbor_dist(ch1_locs, ch2_locs, radii):
 @jit(nopython=True, nogil=True, cache=False)
 def calc_coloc_values(spearman, ch1_locs, ch2_locs, radii):
 
+    """
+    This function weights the spearman correlation coefficients
+    with an exponential function.
+
+    In: spearman---spearman correlation coefficients (np array).
+    ch1_locs---localisation table for a particular channel (np array)
+    ch2_locs---localisation table for second channel (np array)
+    radii---incrementally increasing radii (list of floats)
+
+    Out: correlation coefficients weighted by distances (np array)
+    """
+
     nearest_neighbors = calculate_nneighbor_dist(ch1_locs,
                                                  ch2_locs, radii)
     
-    return spearman * np.exp(nearest_neighbors)
+    return spearman * np.exp(-nearest_neighbors)
 
 def add_coloc_values(locs, coloc_values):
 
     """
     Add correlation coefficients to localisation data.
+
+    In: locs---localisation table (np array)
+    coloc_values---weighted colocalisation correlation coefficients (np array)
+
+    Out: localisation table with correlation coefficients
     """
 
     return np.hstack((locs, coloc_values)).reshape(-1, 11)
 
-def save_locs_colocs(processed_data, out):
+def save_locs_colocs(processed_data, channel, out):
 
     """
-    Save localisations with correlation coefficients as .csv file.
+    Save localisations with correlation coefficients as .csv file. Note
+    this should probably be refactored to save data as a pd dataframe.
+
+    In: processed_data---localisation table with correlation coefficients 
+    (np array)
+    out---user-specified output folder (str)
+
+    Out: None but a .csv file should be saved.
     """
 
-    np.savetxt(out + '/locs_with_pearson.csv',
-               processed_data, fmt='%.6e', delimiter=',')
+    cols = ['id',
+            'frame',
+            'x [nm]',
+            'y [nm]',
+            'sigma [nm]',
+            'intensity [photons]',
+            'offset [photons]',
+            'bkgstd [photons]',
+            'uncertainty [nm]',
+            'channel',
+            'cor_coeff'
+            ]
+
+    locs_proc = pd.DataFrame(data=processed_data, columns=cols)
+
+    locs_proc.to_csv(out + '/processed_locs_' +
+    str(channel) + '.csv')
 
 def combine_channel_locs(ch1_locs, ch2_locs):
 
     """
     Combines the localisations of channel one, and two. Recommended to do
     this following colocalisation analysis.
+
+    In: ch1_locs---localisations of channel 1 with correlation coefficients
+    (np array)
+    ch2_locs---localisations of channel 2 with correlation coefficients (np array)
+
+    Out: localisations of all channels (np array)
     """
 
     return np.vstack((ch1_locs, ch2_locs))
