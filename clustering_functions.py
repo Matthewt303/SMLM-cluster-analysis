@@ -787,7 +787,7 @@ def save_corrected_channels(cor_locs, locs, out):
 
     locs_df = pd.DataFrame(data=cor_data, columns=cols)
 
-    locs_df.to_csv(out + '/corrected_locs.csv')
+    locs_df.to_csv(out + '/corrected_locs.csv', index=False)
     
     return cor_data
 
@@ -827,11 +827,11 @@ def calc_counts_with_radius(locs, x0, y0, radii):
 
     for i in range(1, len(radii)):
 
-        filt_locs = locs[((locs[:, 2] - x0)**2 + 
-                                (locs[:, 3] - y0)**2 < radii[i]**2)]
+        filt_locs = locs[((locs[:, 0] - x0)**2 + 
+                                (locs[:, 1] - y0)**2 < radii[i]**2)]
         
-        filt_locs = filt_locs[((filt_locs[:, 2] - x0)**2 + 
-                                (filt_locs[:, 3] - y0)**2 > radii[i-1]**2)]
+        filt_locs = filt_locs[((filt_locs[:, 0] - x0)**2 + 
+                                (filt_locs[:, 1] - y0)**2 > radii[i-1]**2)]
         
         loc_counts_with_r[0, i] = filt_locs.shape[0] + 1
     
@@ -879,7 +879,7 @@ def calc_all_distributions(channel1_locs, channel2_locs, radii):
 
     for i in range(0, channel1_locs.shape[0]):
 
-        x0, y0 = channel1_locs[i, 2], channel1_locs[i, 3]
+        x0, y0 = channel1_locs[i, 0], channel1_locs[i, 1]
 
         # Channel 1
         ch1_counts = calc_counts_with_radius(
@@ -947,7 +947,7 @@ def calculate_nneighbor_dist(ch1_locs, ch2_locs, radii):
 
     for i in range(0, ch1_locs.shape[0]):
 
-        x0, y0 = ch1_locs[i, 0], ch1_locs[i, 1]
+        x0, y0 = ch1_locs[i, 1], ch1_locs[i, 1]
 
         distances[i, 0] = np.min(np.sqrt((ch2_locs[:, 0] - x0)**2 + 
                                   (ch2_locs[:, 1] - y0)**2))
@@ -1016,7 +1016,7 @@ def save_locs_colocs(processed_data, channel, out):
     locs_proc = pd.DataFrame(data=processed_data, columns=cols)
 
     locs_proc.to_csv(out + '/processed_locs_' +
-    str(channel) + '.csv')
+    str(channel) + '.csv', index=False)
 
 def combine_channel_locs(ch1_locs, ch2_locs):
 
