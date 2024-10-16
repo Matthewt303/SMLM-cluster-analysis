@@ -47,7 +47,7 @@ def user_input():
         
     return input_text
 
-def load_locs(path: str):
+def load_locs(path: str, channels=1):
 
     """
     Extract localisation data from .csv file, preferably from ThunderSTORM
@@ -61,7 +61,13 @@ def load_locs(path: str):
     locs = np.genfromtxt(path, delimiter=',', dtype=float,
                          skip_header=1)
     
-    return locs.reshape(-1, 9)
+    if channels == 1:
+    
+        return locs.reshape(-1, 9)
+    
+    else:
+
+        return locs.reshape(-1, 11)
 
 def extract_xy(locs):
 
@@ -1091,28 +1097,38 @@ def test_ripley_clustering():
 
 def two_color_analysis():
 
-    print('Enter path to first channel.')
+    print('Enter path to beads for first channel.')
+    green_bead_ch_path = user_input()
+
+    print('Enter path to beads for second channel.')
+    red_bead_ch_path = user_input()
+
+    print('Enter path to localisations in first channel.')
     green_ch_path = user_input()
 
-    print('Enter path to second channel.')
+    print('Enter path to localisations in second channel.')
     red_ch_path = user_input()
 
     print('Where you want things saved.')
     out = user_input()
 
+    green_beads, red_beads = load_locs(path=green_bead_ch_path), load_locs(path=red_bead_ch_path)
+
     green_locs, red_locs = load_locs(path=green_ch_path), load_locs(path=red_ch_path)
 
-    green_xy, red_xy = extract_xy_cr(locs=green_locs), extract_xy_cr(locs=red_locs)
+    green_locs_xy = extract_xy_cr(locs=green_locs)
+    
+    green_bead_xy, red_bead_xy = extract_xy_cr(locs=green_beads), extract_xy_cr(locs=red_beads)
 
-    matrix = calculate_transformation_matrix(channel1=green_xy, channel2=red_xy)
+    matrix = calculate_transformation_matrix(channel1=green_bead_xy, channel2=red_bead_xy)
 
-    green_xy_reg = register_channel(channel=green_xy, matrix=matrix)
+    green_xy_reg = register_channel(channel=green_locs_xy, matrix=matrix)
 
     green_locs_cor = save_corrected_channels(cor_locs=green_xy_reg, locs=green_locs, out=out)
 
     green, red = add_channel(locs=green_locs_cor, channel=1), add_channel(locs=red_locs, channel=2)
 
-    radii = generate_radii(bounding_radius=3000, increment=30)
+    radii = generate_radii(bounding_radius=150, increment=15)
 
     gg_dist, gr_dist = calc_all_distributions(channel1_locs=green,
                                               channel2_locs=red,
@@ -1138,7 +1154,7 @@ def test_hdbscan():
     print('Enter folder for things to be saved.')
     outpath = user_input()
 
-    data = load_locs(path=path)
+    data = load_locs(path=path, channels=2)
 
     clusters = hdbscan(locs=data, min_n=4)
 
