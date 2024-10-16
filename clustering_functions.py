@@ -544,7 +544,7 @@ def plot_cluster_statistics(filt_cluster_data, outpath):
     In: filt_cluster_data---table with statistics for all clusters (np array)
     outpath---path to folder where plots will be saved (str)
 
-    Out: None but four plot should be saved in the specified folder.
+    Out: None but four plots should be saved in the specified folder.
     """
 
     for i in range(2, filt_cluster_data.shape[1] - 1):
@@ -553,6 +553,17 @@ def plot_cluster_statistics(filt_cluster_data, outpath):
                       filt_cluster_data.columns[i], out=outpath)
 
 def calculate_statisitcs(filt_cluster_data):
+
+    """
+    This function calculates the mean, median, and standard deviation
+    for each cluster descriptior. That is the area, intensity, circularity,
+    and radius.
+
+    In: filt_cluster_data, table of cluster descriptors (np array)
+
+    Out: clust_statistics. The mean, median, and standard deviation for
+    each descriptor (dict).
+    """
 
     clust_statistics = {}
 
@@ -570,10 +581,20 @@ def calculate_statisitcs(filt_cluster_data):
 
     return clust_statistics
 
-def save_statistics(cluster_statisitcs, out):
+def save_statistics(cluster_statistics, out):
+
+    """
+    This function saves the statistics as a .txt file.
+
+    In: cluster_statistics. The mean, median, and standard deviation of each
+    cluster descriptor (dict).
+    out: output folder where the file will be saved (str).
+
+    Out: None but a .txt file should be saved in the specified output path.
+    """
 
     with open(out + '/cluster_stats.txt', 'w') as f:
-        print(cluster_statisitcs, file=f)
+        print(cluster_statistics, file=f)
 
 ## Cluster visualisation
 
