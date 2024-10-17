@@ -732,7 +732,7 @@ def register_channel(channel, matrix):
 
     return corrected_channel.reshape(channel.shape[0], 2)
 
-def compare_channels(channel1, channel2, out):
+def compare_channels(channel1, channel2):
 
     """
     This function plots the xy-localisations of channel 1 and channel 2
@@ -749,11 +749,11 @@ def compare_channels(channel1, channel2, out):
     mpl.rcParams['font.family'] = 'sans-serif'
     mpl.rcParams['font.size'] = 10
 
-    fig, ax = plt.subplots(figsize=(5, 5), dpi=300)
+    fig, ax = plt.subplots(figsize=(6, 6), dpi=300)
 
-    ax.scatter(channel1[:, 0], channel1[:, 1], s=20,
+    ax.scatter(channel1[:, 0], channel1[:, 1], s=2,
                facecolors='b')
-    ax.scatter(channel2[:, 0], channel2[:, 1], s=20,
+    ax.scatter(channel2[:, 0], channel2[:, 1], s=2,
                facecolors='r')
     
     ratio = 1.0
@@ -782,7 +782,7 @@ def compare_channels(channel1, channel2, out):
     ax.spines['right'].set_linewidth(1.0)
     ax.spines['left'].set_linewidth(1.0)
 
-    plt.savefig(out + '/loc_comparison.png')
+    plt.show()
 
 def save_corrected_channels(cor_locs, locs, out):
 
@@ -799,7 +799,7 @@ def save_corrected_channels(cor_locs, locs, out):
     A .csv file is also saved in the specified output folder.
     """
 
-    cor_data = np.hstack((cor_locs, locs[:, 2:])).reshape(-1, 9)
+    cor_data = np.hstack((locs[:, 0:2], cor_locs, locs[:, 4:])).reshape(locs.shape[0], 9)
 
     cols = ['id',
             'frame',
@@ -833,7 +833,7 @@ def add_channel(locs, channel: int):
 
     channel_col = np.repeat(channel, locs.shape[0]).reshape(locs.shape[0], 1)
 
-    return np.hstack((locs, channel_col)).reshape(-1, 10)
+    return np.hstack((locs, channel_col)).reshape(locs.shape[0], 10)
 
 @jit(nopython=True, nogil=True, cache=False)
 def calc_counts_with_radius(locs, x0, y0, radii):
@@ -999,7 +999,9 @@ def calc_coloc_values(spearman, ch1_locs, ch2_locs, radii):
     nearest_neighbors = calculate_nneighbor_dist(ch1_locs,
                                                  ch2_locs, radii)
     
-    return spearman * np.exp(-nearest_neighbors)
+    cbcs = spearman * np.exp(-nearest_neighbors)
+
+    return cbcs.reshape(ch1_locs.shape[0], 1)
 
 def add_coloc_values(locs, coloc_values):
 
@@ -1012,7 +1014,7 @@ def add_coloc_values(locs, coloc_values):
     Out: localisation table with correlation coefficients
     """
 
-    return np.hstack((locs, coloc_values)).reshape(-1, 11)
+    return np.hstack((locs, coloc_values)).reshape(locs.shape[0], 11)
 
 def save_locs_colocs(processed_data, channel, out):
 
@@ -1062,6 +1064,30 @@ def combine_channel_locs(ch1_locs, ch2_locs):
 
 ## Main functions
 
+def test_registration():
+
+    path1 = 'C:/Users/matth/Documents/two_colour_storm_ace2snap_atto488_spike_af647/two_color_ace2cfp2_spike/beads_wf_488/beads_488_filt_locs.csv'
+
+    path2 = 'C:/Users/matth/Documents/two_colour_storm_ace2snap_atto488_spike_af647/two_color_ace2cfp2_spike/beads_wf_640/bead_locs_640.csv'
+
+    green_ch_path = 'C:/Users/matth/Documents/two_colour_storm_ace2snap_atto488_spike_af647/two_color_ace2cfp2_spike/reconstruction_ace2cfp2_two_colour_488.csv'
+    
+    red_ch_path = 'C:/Users/matth/Documents/two_colour_storm_ace2snap_atto488_spike_af647/two_color_ace2cfp2_spike/reconstruction_filt_ace2cfp2_two_colour_640.csv'
+    
+    green_beads, red_beads = load_locs(path=path1), load_locs(path=path2)
+
+    green_locs, red_locs = load_locs(path=green_ch_path), load_locs(path=red_ch_path)
+
+    green_locs_xy = extract_xy_cr(locs=green_locs)
+    
+    green_bead_xy, red_bead_xy = extract_xy_cr(locs=green_beads), extract_xy_cr(locs=red_beads)
+
+    matrix = calculate_transformation_matrix(channel1=green_bead_xy, channel2=red_bead_xy)
+
+    green_xy_reg = register_channel(channel=green_locs_xy, matrix=matrix)
+
+    compare_channels(green_xy_reg, red_locs[:, 2:4].reshape(-1, 2))
+
 def test_ripley_clustering():
 
     print('Enter path to localisation file')
@@ -1095,7 +1121,7 @@ def test_ripley_clustering():
 
     save_max_r(outpath=outpath, max_r=rmax)
 
-def two_color_analysis():
+def two_color_analysis_all():
 
     print('Enter path to beads for first channel.')
     green_bead_ch_path = user_input()
@@ -1128,23 +1154,38 @@ def two_color_analysis():
 
     green, red = add_channel(locs=green_locs_cor, channel=1), add_channel(locs=red_locs, channel=2)
 
-    radii = generate_radii(bounding_radius=150, increment=15)
+    green_xy, red_xy = extract_xy(green), extract_xy(red)
+    
+    radii = generate_radii(bounding_radius=200, increment=10)
 
-    gg_dist, gr_dist = calc_all_distributions(channel1_locs=green,
-                                              channel2_locs=red,
+    gg_dist, gr_dist = calc_all_distributions(channel1_locs=green_xy,
+                                              channel2_locs=red_xy,
                                               radii=radii)
     
     green_spearman = calc_spearman_cor_coeff(ch1_dist=gg_dist, ch2_dist=gr_dist)
 
-    colocs = calc_coloc_values(spearman=green_spearman, ch1_locs=green,
-                               ch2_locs=red_locs, radii=radii)
+    colocs = calc_coloc_values(spearman=green_spearman, ch1_locs=green_xy,
+                               ch2_locs=red_xy, radii=radii)
 
     save_locs_colocs(add_coloc_values(locs=green, coloc_values=colocs),
-                       out=out)
+                       channel=1, out=out)
     
-    rr_dist, rg_dist = calc_all_distributions(channel1_locs=red,
-                                              channel2_locs=green,
+    rr_dist, rg_dist = calc_all_distributions(channel1_locs=red_xy,
+                                              channel2_locs=green_xy,
                                               radii=radii)
+    
+    red_spearman = calc_spearman_cor_coeff(ch1_dist=rr_dist, ch2_dist=rg_dist)
+
+    colocs_red = calc_coloc_values(spearman=red_spearman, ch1_locs=red,
+                                   ch2_locs=green, radii=radii)
+    
+    save_locs_colocs(add_coloc_values(locs=red, coloc_values=colocs_red),
+                     channel=2, out=out)
+    
+    all_locs = combine_channel_locs(add_coloc_values(locs=green, coloc_values=colocs),
+                                    add_coloc_values(locs=red, coloc_values=colocs_red))
+
+    save_locs_colocs(all_locs, channel=3, out=out)
 
 def test_hdbscan():
 
@@ -1182,4 +1223,4 @@ def main():
 
 if __name__ == '__main__':
 
-    test_hdbscan()
+    test_registration()
