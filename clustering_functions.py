@@ -1176,8 +1176,8 @@ def two_color_analysis_all():
     
     red_spearman = calc_spearman_cor_coeff(ch1_dist=rr_dist, ch2_dist=rg_dist)
 
-    colocs_red = calc_coloc_values(spearman=red_spearman, ch1_locs=red,
-                                   ch2_locs=green, radii=radii)
+    colocs_red = calc_coloc_values(spearman=red_spearman, ch1_locs=red_xy,
+                                   ch2_locs=green_xy, radii=radii)
     
     save_locs_colocs(add_coloc_values(locs=red, coloc_values=colocs_red),
                      channel=2, out=out)
