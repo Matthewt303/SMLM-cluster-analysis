@@ -1105,16 +1105,16 @@ def test_ripley_clustering():
 
 def two_color_analysis_all():
 
-    print('Enter path to beads for first channel.')
+    print('Enter path to beads for green channel.')
     green_bead_ch_path = user_input()
 
-    print('Enter path to beads for second channel.')
+    print('Enter path to beads for red channel.')
     red_bead_ch_path = user_input()
 
-    print('Enter path to localisations in first channel.')
+    print('Enter path to localisations in green channel.')
     green_ch_path = user_input()
 
-    print('Enter path to localisations in second channel.')
+    print('Enter path to localisations in red channel.')
     red_ch_path = user_input()
 
     print('Where you want things saved.')
