@@ -599,7 +599,7 @@ def save_statistics(cluster_statistics, out):
     Out: None but a .txt file should be saved in the specified output path.
     """
 
-    with open(out + '/cluster_stats.txt', 'w') as f:
+    with open(out + '/cluster_stats_summary.txt', 'w') as f:
         print(cluster_statistics, file=f)
 
 ## Cluster visualisation
@@ -1064,30 +1064,6 @@ def combine_channel_locs(ch1_locs, ch2_locs):
 
 ## Main functions
 
-def test_registration():
-
-    path1 = 'C:/Users/matth/Documents/two_colour_storm_ace2snap_atto488_spike_af647/two_color_ace2cfp2_spike/beads_wf_488/beads_488_filt_locs.csv'
-
-    path2 = 'C:/Users/matth/Documents/two_colour_storm_ace2snap_atto488_spike_af647/two_color_ace2cfp2_spike/beads_wf_640/bead_locs_640.csv'
-
-    green_ch_path = 'C:/Users/matth/Documents/two_colour_storm_ace2snap_atto488_spike_af647/two_color_ace2cfp2_spike/reconstruction_ace2cfp2_two_colour_488.csv'
-    
-    red_ch_path = 'C:/Users/matth/Documents/two_colour_storm_ace2snap_atto488_spike_af647/two_color_ace2cfp2_spike/reconstruction_filt_ace2cfp2_two_colour_640.csv'
-    
-    green_beads, red_beads = load_locs(path=path1), load_locs(path=path2)
-
-    green_locs, red_locs = load_locs(path=green_ch_path), load_locs(path=red_ch_path)
-
-    green_locs_xy = extract_xy_cr(locs=green_locs)
-    
-    green_bead_xy, red_bead_xy = extract_xy_cr(locs=green_beads), extract_xy_cr(locs=red_beads)
-
-    matrix = calculate_transformation_matrix(channel1=green_bead_xy, channel2=red_bead_xy)
-
-    green_xy_reg = register_channel(channel=green_locs_xy, matrix=matrix)
-
-    compare_channels(green_xy_reg, red_locs[:, 2:4].reshape(-1, 2))
-
 def test_ripley_clustering():
 
     print('Enter path to localisation file')
@@ -1187,7 +1163,7 @@ def two_color_analysis_all():
 
     save_locs_colocs(all_locs, channel=3, out=out)
 
-def test_hdbscan():
+def cluster_analysis():
 
     print('Enter path to localisation file')
     path = user_input()
@@ -1199,7 +1175,7 @@ def test_hdbscan():
 
     clusters = hdbscan(locs=data, min_n=4)
 
-    save_dbscan_results(data=clusters, n_channels=1, outpath=outpath)
+    save_dbscan_results(data=clusters, n_channels=2, outpath=outpath)
 
     dbscan_filt = denoise_data(dbscan_data=clusters, min_n=4)
 
@@ -1223,4 +1199,4 @@ def main():
 
 if __name__ == '__main__':
 
-    test_registration()
+    pass
