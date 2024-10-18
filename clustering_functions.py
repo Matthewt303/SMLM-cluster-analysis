@@ -251,8 +251,10 @@ def hdbscan(locs, min_n):
 
     cluster_probabilities = hdbscan.probabilities_
 
+    all_data = np.concatenate((locs, labels[:, np.newaxis], cluster_probabilities[:, np.newaxis]), axis=1).reshape(-1, 13)
+
     # Combine localisation data, labels, and probabilities
-    return np.concatenate((locs, labels[:, np.newaxis], cluster_probabilities[:, np.newaxis]), axis=1)
+    return all_data
 
 def denoise_data(dbscan_data, min_n):
 
@@ -278,14 +280,10 @@ def denoise_data(dbscan_data, min_n):
         if count < min_n:
                 
             noiseless_data = noiseless_data[(noiseless_data[:, -2] != float(label))]
-        
-        else:
-            
-            continue
     
     return noiseless_data
 
-def save_dbscan_results(data, n_channels, outpath):
+def save_dbscan_results(data, n_channels, outpath, filt=0):
 
     """
     Convert dbscan results to dataframe and save as .csv. Columns change
@@ -324,13 +322,19 @@ def save_dbscan_results(data, n_channels, outpath):
             'bkgstd [photons]',
             'uncertainty [nm]',
             'Channel',
-            'Degree of colocalisation'
+            'Degree of colocalisation',
             'label',
             'probability']
     
     dbscan_results_df = pd.DataFrame(data=data, columns=cols)
 
-    dbscan_results_df.to_csv(outpath + '/dbscan_output.csv')
+    if filt == 0:
+    
+        dbscan_results_df.to_csv(outpath + '/dbscan_output.csv', index=False)
+
+    else:
+
+        dbscan_results_df.to_csv(outpath + '/filt_dbscan_output.csv', index=False)
 
 def calculate_intensity(points):
 
@@ -355,7 +359,9 @@ def calculate_center_of_mass(points):
     Out: xy coordinate of the center of the cluster.
     """
 
-    return np.mean(points, axis=0).reshape(1, 2)
+    center = np.mean(points, axis=0)
+
+    return center[:, np.newaxis]
 
 def calculate_clust_area_perim(points):
 
@@ -428,7 +434,7 @@ def analyse_clusters(dbscan_data):
 
         cluster_area, cluster_perim = calculate_clust_area_perim(cluster_points_xy)
 
-        cluster_radius = calculate_radius(cluster_points_xy, center=center_of_mass)
+        cluster_radius = calculate_radius(cluster_points_xy, center=center_of_mass.T)
 
         circularity = calculate_circularity(perimeter=cluster_perim, area=cluster_area)
 
@@ -1173,11 +1179,17 @@ def cluster_analysis():
 
     data = load_locs(path=path, channels=2)
 
+    print(data.shape)
+
     clusters = hdbscan(locs=data, min_n=4)
+
+    print(clusters.shape)
 
     save_dbscan_results(data=clusters, n_channels=2, outpath=outpath)
 
     dbscan_filt = denoise_data(dbscan_data=clusters, min_n=4)
+
+    save_dbscan_results(data=dbscan_filt, n_channels=2, outpath=outpath, filt=1)
 
     clust_analysed = analyse_clusters(dbscan_data=dbscan_filt)
 
