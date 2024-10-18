@@ -361,7 +361,7 @@ def calculate_center_of_mass(points):
 
     center = np.mean(points, axis=0)
 
-    return center[:, np.newaxis]
+    return center
 
 def calculate_clust_area_perim(points):
 
@@ -432,9 +432,11 @@ def analyse_clusters(dbscan_data):
 
         center_of_mass = calculate_center_of_mass(cluster_points_xy)
 
+        center = center_of_mass[:, np.newaxis]
+
         cluster_area, cluster_perim = calculate_clust_area_perim(cluster_points_xy)
 
-        cluster_radius = calculate_radius(cluster_points_xy, center=center_of_mass.T)
+        cluster_radius = calculate_radius(cluster_points_xy, center=center.T)
 
         circularity = calculate_circularity(perimeter=cluster_perim, area=cluster_area)
 
