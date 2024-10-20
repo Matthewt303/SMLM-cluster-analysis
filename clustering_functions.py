@@ -345,6 +345,14 @@ def load_dbscan_data(path):
     
     return data.reshape(-1, 13)
 
+def calc_percent_coloc(dbscan_data):
+
+    pass
+
+def plot_bar_percent_coloc(percent_ch1, percent_ch2, name_ch1, name_ch2):
+
+    pass
+
 def separate_coloc_data(dbscan_data, threshold=0.4):
 
     no_coloc = dbscan_data[(dbscan_data[:, -3] < threshold)]
@@ -1280,7 +1288,11 @@ def cluster_analysis_all():
 
 def cluster_analysis_coloc():
 
-    pass
+    print('Enter path to DBSCAN data.')
+    path = user_input()
+
+    print('Enter folder for things to be saved.')
+    outpath = user_input()
 
 def main():
 
