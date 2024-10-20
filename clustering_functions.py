@@ -336,6 +336,23 @@ def save_dbscan_results(data, n_channels, outpath, filt=0):
 
         dbscan_results_df.to_csv(outpath + '/filt_dbscan_output.csv', index=False)
 
+## Cluster analysis functions
+
+def load_dbscan_data(path):
+
+    data = np.genfromtxt(path, dtype=float, delimiter=',',
+                         skip_header=1)
+    
+    return data.reshape(-1, 13)
+
+def separate_coloc_data(dbscan_data, threshold=0.4):
+
+    no_coloc = dbscan_data[(dbscan_data[:, -3] < threshold)]
+
+    coloc = dbscan_data[(dbscan_data[:, -3] > threshold)]
+
+    return no_coloc.reshape(-1, 13), coloc.reshape(-1, 13)
+
 def calculate_intensity(points):
 
     """
@@ -486,15 +503,28 @@ def convert_to_dataframe(filt_cluster_data):
 
     return cluster_data_df
     
-def save_cluster_analysis(filt_cluster_data, outpath):
+def save_cluster_analysis(filt_cluster_data, outpath, coloc=0):
 
     """
     Save results of cluster analysis as a .csv file.
     """
 
-    filt_cluster_data.to_csv(outpath + '/dbscan_analysis.csv', sep=',')
+    if coloc == 0:
 
-def plot_histogram(data, title, out):
+        filt_cluster_data.to_csv(outpath + '/cluster_analysis.csv', sep=',',
+                                 index=False)
+
+    elif coloc == 1:
+
+        filt_cluster_data.to_csv(outpath + '/cluster_analysis_coloc_ch1.csv', sep=',',
+                                 index=False)
+    
+    else:
+
+        filt_cluster_data.to_csv(outpath + '/cluster_analysis_coloc_ch2.csv', sep=',',
+                                 index=False)
+
+def plot_histogram(data, title, out, coloc=0):
 
     """
     Plots a histogram for a column of data.
@@ -548,9 +578,19 @@ def plot_histogram(data, title, out):
     ax.set_xlabel(title, labelpad=6, fontsize=40)
     ax.set_ylabel('Frequency', labelpad=2, fontsize=40)
 
-    plt.savefig(out + '/' + title + '.png')
+    if coloc == 0:
+    
+        plt.savefig(out + '/' + title + '.png')
+    
+    elif coloc == 1:
 
-def plot_cluster_statistics(filt_cluster_data, outpath):
+        plt.savefig(out + '/' + title + '_ch1_coloc.png')
+    
+    else:
+
+        plt.savefig(out + '/' + title + '_ch2_coloc.png')
+
+def plot_cluster_statistics(filt_cluster_data, outpath, coloc):
 
     """
     Plots and saves histograms for cluster intensity, area, and radius.
@@ -564,7 +604,8 @@ def plot_cluster_statistics(filt_cluster_data, outpath):
     for i in range(2, filt_cluster_data.shape[1] - 1):
 
         plot_histogram(filt_cluster_data[filt_cluster_data.columns[i]],
-                      filt_cluster_data.columns[i], out=outpath)
+                      filt_cluster_data.columns[i], out=outpath,
+                      coloc=coloc)
 
 def calculate_statisitcs(filt_cluster_data):
 
@@ -595,7 +636,7 @@ def calculate_statisitcs(filt_cluster_data):
 
     return clust_statistics
 
-def save_statistics(cluster_statistics, out):
+def save_statistics(cluster_statistics, out, coloc=0):
 
     """
     This function saves the statistics as a .txt file.
@@ -607,8 +648,32 @@ def save_statistics(cluster_statistics, out):
     Out: None but a .txt file should be saved in the specified output path.
     """
 
-    with open(out + '/cluster_stats_summary.txt', 'w') as f:
-        print(cluster_statistics, file=f)
+    if coloc == 0:
+
+        with open(out + '/cluster_stats_summary.txt', 'w') as f:
+            print(cluster_statistics, file=f)
+    
+    elif coloc == 1:
+
+        with open(out + '/cluster_stats_summary_ch1_coloc.txt', 'w') as f:
+            print(cluster_statistics, file=f)
+    
+    else:
+
+        with open(out + '/cluster_stats_summary_ch2_coloc.txt', 'w') as f:
+            print(cluster_statistics, file=f)
+
+def plot_boxplot(data, out, coloc):
+
+    pass
+
+def compare_clust_size(data, coloc_data, coloc):
+
+    pass
+
+def compare_clust_circularity(data, coloc_data, coloc):
+
+    pass
 
 ## Cluster visualisation
 
@@ -1171,7 +1236,7 @@ def two_color_analysis_all():
 
     save_locs_colocs(all_locs, channel=3, out=out)
 
-def cluster_analysis():
+def cluster_classification():
 
     print('Enter path to localisation file')
     path = user_input()
@@ -1181,17 +1246,23 @@ def cluster_analysis():
 
     data = load_locs(path=path, channels=2)
 
-    print(data.shape)
-
     clusters = hdbscan(locs=data, min_n=4)
-
-    print(clusters.shape)
 
     save_dbscan_results(data=clusters, n_channels=2, outpath=outpath)
 
     dbscan_filt = denoise_data(dbscan_data=clusters, min_n=4)
 
     save_dbscan_results(data=dbscan_filt, n_channels=2, outpath=outpath, filt=1)
+
+def cluster_analysis_all():
+
+    print('Enter path to DBSCAN data.')
+    path = user_input()
+
+    print('Enter folder for things to be saved.')
+    outpath = user_input()
+
+    dbscan_filt = load_dbscan_data(path=path)
 
     clust_analysed = analyse_clusters(dbscan_data=dbscan_filt)
 
@@ -1206,6 +1277,10 @@ def cluster_analysis():
     cluster_stats = calculate_statisitcs(filt_cluster_data=clust_filt_df)
 
     save_statistics(cluster_stats)
+
+def cluster_analysis_coloc():
+
+    pass
 
 def main():
 
