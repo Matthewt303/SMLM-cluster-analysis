@@ -141,7 +141,7 @@ def ripley_h_function(l_values, radii):
 
     return l_values - np.array(radii).reshape(len(radii), 1)
 
-def plot_ripley_h(h_values, radii, out, title):
+def plot_ripley_h(h_values, radii, out):
 
     """
     Plots Ripley's H-function against radii.
@@ -158,9 +158,9 @@ def plot_ripley_h(h_values, radii, out, title):
 
     # Set font type and size for axis values
     mpl.rcParams['font.family'] = 'sans-serif'
-    mpl.rcParams['font.size'] = 28
+    mpl.rcParams['font.size'] = 20
 
-    fig, ax = plt.subplots(figsize=(12, 12), dpi=500)
+    fig, ax = plt.subplots(figsize=(7, 7), dpi=500)
 
     # Plot Ripley's H-function against radii
     ax.plot(radii, h_values, 'b', linewidth=5.0)
@@ -199,10 +199,10 @@ def plot_ripley_h(h_values, radii, out, title):
     ax.spines['left'].set_linewidth(1.0)
 
     # Axis labels
-    ax.set_xlabel('Radius (nm)', labelpad=6, fontsize=40)
-    ax.set_ylabel('H(r)', labelpad=2, fontsize=40)
+    ax.set_xlabel('Radius (nm)', labelpad=6, fontsize=30)
+    ax.set_ylabel('H(r)', labelpad=2, fontsize=30)
 
-    plt.savefig(out + '/' + str(title) + '.png')
+    plt.savefig(out + '/ripley_hfunction.png')
 
 def calculate_rmax(h_values, radii):
 
@@ -473,17 +473,22 @@ def analyse_clusters(dbscan_data):
 def filter_clusters(cluster_data):
 
     """
-    Remove clusters with very large radii and ensure no values are nan.
+    Remove clusters with very large radii or very high
+    intensities and  ensure no values are nan.
 
     In: cluster_data---table with cluster statisitcs (np array)
 
     Out: filtered cluster data (np array)
     """
-    cluster_data = cluster_data[~np.isnan(cluster_data).any(axis=1), :]
+    cluster_data_nanfilt = cluster_data[~np.isnan(cluster_data).any(axis=1), :]
 
-    filtered_clust_data = cluster_data[(cluster_data[:, 3] < 400)]
+    filtered_clust_data = cluster_data_nanfilt[(cluster_data_nanfilt[:, 3] < 400)]
 
-    return filtered_clust_data[(filtered_clust_data[:, 3] > 20)]
+    filt_r = filtered_clust_data[(filtered_clust_data[:, 3] > 20)]
+
+    filt_all = filt_r[(filt_r[:, 5] < 100)]
+
+    return filt_all
 
 
 def convert_to_dataframe(filt_cluster_data):
@@ -549,9 +554,9 @@ def plot_histogram(data, title, out, coloc=0):
     weights = np.ones_like(data) / float(len(data))
 
     mpl.rcParams['font.family'] = 'sans-serif'
-    mpl.rcParams['font.size'] = 28
+    mpl.rcParams['font.size'] = 20
 
-    fig, ax = plt.subplots(figsize=(10, 10), dpi=500)
+    fig, ax = plt.subplots(figsize=(7, 7), dpi=500)
 
     plt.hist(data, bins=20, weights=weights, edgecolor='black', linewidth=1.1, color='C3')
 
@@ -583,8 +588,8 @@ def plot_histogram(data, title, out, coloc=0):
     ax.spines['right'].set_linewidth(1.0)
     ax.spines['left'].set_linewidth(1.0)
 
-    ax.set_xlabel(title, labelpad=6, fontsize=40)
-    ax.set_ylabel('Frequency', labelpad=2, fontsize=40)
+    ax.set_xlabel(title, labelpad=6, fontsize=30)
+    ax.set_ylabel('Frequency', labelpad=2, fontsize=30)
 
     if coloc == 0:
     
@@ -598,7 +603,7 @@ def plot_histogram(data, title, out, coloc=0):
 
         plt.savefig(out + '/' + title + '_ch2_coloc.png')
 
-def plot_cluster_statistics(filt_cluster_data, outpath, coloc):
+def plot_cluster_statistics(filt_cluster_data, outpath, coloc=0):
 
     """
     Plots and saves histograms for cluster intensity, area, and radius.
@@ -659,29 +664,83 @@ def save_statistics(cluster_statistics, out, coloc=0):
     if coloc == 0:
 
         with open(out + '/cluster_stats_summary.txt', 'w') as f:
-            print(cluster_statistics, file=f)
+            
+            for stat in cluster_statistics:
+
+                print(stat + ' ' + str(cluster_statistics[stat]) + '\n',
+                    file=f)
     
     elif coloc == 1:
 
         with open(out + '/cluster_stats_summary_ch1_coloc.txt', 'w') as f:
-            print(cluster_statistics, file=f)
+            
+            for stat in cluster_statistics:
+
+                print(stat + ' ' + str(cluster_statistics[stat]) + '\n',
+                    file=f)
     
     else:
 
         with open(out + '/cluster_stats_summary_ch2_coloc.txt', 'w') as f:
-            print(cluster_statistics, file=f)
+            
+            for stat in cluster_statistics:
 
-def plot_boxplot(data, out, coloc):
+                print(stat + ' ' + str(cluster_statistics[stat]) + '\n',
+                    file=f)
 
-    pass
+def plot_boxplot(data, statistic, out):
 
-def compare_clust_size(data, coloc_data, coloc):
+    mpl.rcParams['font.family'] = 'sans-serif'
+    mpl.rcParams['font.size'] = 20
 
-    pass
+    fig, ax = plt.subplots(figsize=(8, 8), dpi=500)
 
-def compare_clust_circularity(data, coloc_data, coloc):
+    ax.boxplot(data)
 
-    pass
+    ratio = 1.0
+
+    x_left, x_right = ax.get_xlim()
+    y_low, y_high = ax.get_ylim()
+    ax.set_aspect(abs((x_right-x_left)/(y_low-y_high)) * ratio)
+
+    ax.tick_params(axis='y', which='major', length=6, direction='in')
+    ax.tick_params(axis='y', which='minor', length=3, direction='in')
+
+    ax.set_xticklabels(['Non-colocalised', 'Colocalised'], labelpad=4, fontsize=16)
+
+    ax.yaxis.set_minor_locator(AutoMinorLocator(10))
+
+    ax.xaxis.label.set_color('black')
+    ax.yaxis.label.set_color('black')
+
+    ax.spines['bottom'].set_color('black')
+    ax.spines['top'].set_color('black')
+    ax.spines['right'].set_color('black')
+    ax.spines['left'].set_color('black')
+    ax.spines['bottom'].set_linewidth(1.0)
+    ax.spines['top'].set_linewidth(1.0)
+    ax.spines['right'].set_linewidth(1.0)
+    ax.spines['left'].set_linewidth(1.0)
+
+    ax.set_ylabel(statistic, labelpad=12, fontsize=28)
+
+    plt.savefig(out + '/' + statistic + '.png')
+
+def compare_clust_size(data, coloc_data, out):
+
+    no_loc_radii, loc_radii = data[:, 3], coloc_data[:, 3]
+
+    radii_data = [no_loc_radii, loc_radii]
+
+    plot_boxplot(radii_data, statistic='Radius (nm)', out=out)
+
+def compare_clust_circularity(data, coloc_data, out):
+
+    no_loc_radii, loc_radii = data[:, 4], coloc_data[:, 4]
+
+    radii_data = [no_loc_radii, loc_radii]
+
+    plot_boxplot(radii_data, statistic='Circularity', out=out)
 
 ## Cluster visualisation
 
@@ -813,6 +872,13 @@ def register_channel(channel, matrix):
 
     return corrected_channel.reshape(channel.shape[0], 2)
 
+def measure_accuracy(bead1_loc_reg, bead2_loc):
+
+    n_neighbors = np.min(pairwise_distances(bead1_loc_reg, bead2_loc))
+
+    return n_neighbors.reshape(bead1_loc_reg.shape[0], 1)
+
+
 def compare_channels(channel1, channel2):
 
     """
@@ -898,6 +964,8 @@ def save_corrected_channels(cor_locs, locs, out):
     locs_df.to_csv(out + '/corrected_locs.csv', index=False)
     
     return cor_data
+
+## Functions for two-color STORM---CBC analysis
 
 def add_channel(locs, channel: int):
 
@@ -1152,19 +1220,13 @@ def test_ripley_clustering():
 
     print('Enter folder for things to be saved.')
     outpath = user_input()
-
-    print('Enter bounding radius.')
-    bound_r = float(user_input())
-
-    print('Enter increment.')
-    increment_r = float(user_input())
     
     data = load_locs(path)
 
     xy = extract_xy(data)
     
-    radii = generate_radii(bounding_radius=bound_r,
-                           increment=increment_r)
+    radii = generate_radii(bounding_radius=1500,
+                           increment=10)
     
     k_values = ripley_k_function(xy, r=radii, br=bound_r)
 
@@ -1172,11 +1234,34 @@ def test_ripley_clustering():
 
     h_values = ripley_h_function(l_values=l_values, radii=radii)
 
-    plot_ripley_h(h_values=h_values, radii=radii, out=outpath, title='h_function')
+    plot_ripley_h(h_values=h_values, radii=radii, out=outpath)
 
     rmax = calculate_rmax(h_values=h_values, radii=radii)
 
     save_max_r(outpath=outpath, max_r=rmax)
+
+def two_color_reg_accuracy():
+
+    print('Enter path to beads for green channel.')
+    green_bead_ch_path = user_input()
+
+    print('Enter path to beads for red channel.')
+    red_bead_ch_path = user_input()
+
+    print('Where you want things saved.')
+    out = user_input()
+
+    green_beads, red_beads = load_locs(path=green_bead_ch_path), load_locs(path=red_bead_ch_path)
+
+    green_bead_xy, red_bead_xy = extract_xy_cr(locs=green_beads), extract_xy_cr(locs=red_beads)
+
+    matrix = calculate_transformation_matrix(channel1=green_bead_xy, channel2=red_bead_xy)
+
+    green_xy_reg = register_channel(channel=green_bead_xy, matrix=matrix)
+
+    nearest_neighbors = measure_accuracy(bead1_loc_reg=green_xy_reg, bead2_loc=red_bead_xy)
+
+    plot_histogram(data=nearest_neighbors, title='reg_accuracy', out=out)
 
 def two_color_analysis_all():
 
@@ -1270,6 +1355,8 @@ def cluster_analysis_all():
     print('Enter folder for things to be saved.')
     outpath = user_input()
 
+    print('Cluster analysis has started.')
+    
     dbscan_filt = load_dbscan_data(path=path)
 
     clust_analysed = analyse_clusters(dbscan_data=dbscan_filt)
@@ -1284,7 +1371,9 @@ def cluster_analysis_all():
 
     cluster_stats = calculate_statisitcs(filt_cluster_data=clust_filt_df)
 
-    save_statistics(cluster_stats)
+    save_statistics(cluster_stats, out=outpath)
+
+    print('Analysis complete')
 
 def cluster_analysis_coloc():
 
