@@ -427,6 +427,17 @@ def plot_bar_percent_coloc(percent_ch1, percent_ch2, name_ch1, name_ch2, out):
 
 def separate_coloc_data(dbscan_data, threshold=0.4):
 
+    """
+    This function separates the results from HDBSCAN into two separate arrays depending
+    on whether the molecule colocalises or not. The threshold for colocalisation is 0.4
+
+    In: dbscan_data---results from HDSCAN (np array)
+    threshold---the number above which a molecule is considered to be colocalised (float)
+
+    Out: no_coloc---localisations that were not colocalised (np array)
+    coloc---localisations that were colocalised (np array)
+    """
+
     no_coloc = dbscan_data[(dbscan_data[:, -3] < threshold)]
 
     coloc = dbscan_data[(dbscan_data[:, -3] > threshold)]
@@ -592,6 +603,13 @@ def save_cluster_analysis(filt_cluster_data, outpath, coloc=0):
 
     """
     Save results of cluster analysis as a .csv file.
+
+    In: filt_cluster_data---cluster statistics following filtering (np array)
+    outpath---folder where data will be saved (str)
+    coloc---specifies whether all data (coloc=0), non-colocalised data (coloc=1),
+    or colocalised data (coloc=2) is to be saved (int)
+
+    Out: None but a .csv file with cluster stats is saved.
     """
 
     if coloc == 0:
@@ -617,6 +635,8 @@ def plot_histogram(data, title, out, coloc=0):
     In: data---column of a data describing a phenomenon (np array).
     title---name to give the plot (str)
     out---folder where plot will be saved (str)
+    coloc---specifies whether all data (coloc=0), non-colocalised data (coloc=1),
+    or colocalised data (coloc=2) is to be saved (int)
 
     Out: no output but image of plot will be saved in the specified folder.
     """
@@ -682,6 +702,8 @@ def plot_cluster_statistics(filt_cluster_data, outpath, coloc=0):
 
     In: filt_cluster_data---table with statistics for all clusters (np array)
     outpath---path to folder where plots will be saved (str)
+    coloc---specifies whether all data (coloc=0), non-colocalised data (coloc=1),
+    or colocalised data (coloc=2) is to be saved (int)
 
     Out: None but four plots should be saved in the specified folder.
     """
@@ -729,6 +751,8 @@ def save_statistics(cluster_statistics, out, coloc=0):
     In: cluster_statistics. The mean, median, and standard deviation of each
     cluster descriptor (dict).
     out: output folder where the file will be saved (str).
+    coloc---specifies whether all data (coloc=0), non-colocalised data (coloc=1),
+    or colocalised data (coloc=2) is to be saved (int)
 
     Out: None but a .txt file should be saved in the specified output path.
     """
@@ -761,6 +785,18 @@ def save_statistics(cluster_statistics, out, coloc=0):
                     file=f)
 
 def plot_boxplot(data, statistic, out):
+
+    """
+    This function plots a boxplot.
+
+    In:
+    data---the data for the boxplot. Ideally should be a list of arrays
+    statistic---the parameter that will be compared, i.e. the parameter on the y-axis (str)
+    out---the output folder where the plot will be saved (str)
+
+    Out:
+    None but a .png file of the boxplot will be saved in the specified folder.
+    """
 
     mpl.rcParams['font.family'] = 'sans-serif'
     mpl.rcParams['font.size'] = 20
@@ -800,6 +836,17 @@ def plot_boxplot(data, statistic, out):
 
 def compare_clust_size(data, coloc_data, out):
 
+    """
+    This function extracts the cluster radii from colocalised molecules and non-colocalised
+    molecules and plots it as a boxplot.
+
+    In: data---cluster data from non-colocalised molecules (np array)
+    coloc_data---cluster data from colocalised molecules (np array)
+    out---output folder where things will be saved (str)
+
+    Out: None but a boxplot comparing cluster radii will be saved to the specified folder.
+    """
+
     no_loc_radii, loc_radii = data[:, 3], coloc_data[:, 3]
 
     radii_data = [no_loc_radii, loc_radii]
@@ -807,6 +854,17 @@ def compare_clust_size(data, coloc_data, out):
     plot_boxplot(radii_data, statistic='Radius (nm)', out=out)
 
 def compare_clust_circularity(data, coloc_data, out):
+
+    """
+    This function extracts the cluster circularity from colocalised molecules and non-colocalised
+    molecules and plots it as a boxplot.
+
+    In: data---cluster data from non-colocalised molecules (np array)
+    coloc_data---cluster data from colocalised molecules (np array)
+    out---output folder where things will be saved (str)
+
+    Out: None but a boxplot comparing cluster circularity will be saved to the specified folder.
+    """
 
     no_loc_radii, loc_radii = data[:, 4], coloc_data[:, 4]
 
