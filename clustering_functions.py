@@ -1253,7 +1253,7 @@ def calculate_nneighbor_dist(ch1_locs, ch2_locs, radii):
 
     for i in range(0, ch1_locs.shape[0]):
 
-        x0, y0 = ch1_locs[i, 1], ch1_locs[i, 1]
+        x0, y0 = ch1_locs[i, 0], ch1_locs[i, 1]
 
         distances[i, 0] = np.min(np.sqrt((ch2_locs[:, 0] - x0)**2 + 
                                   (ch2_locs[:, 1] - y0)**2))
@@ -1358,7 +1358,7 @@ def test_ripley_clustering():
     radii = generate_radii(bounding_radius=1500,
                            increment=10)
     
-    k_values = ripley_k_function(xy, r=radii, br=bound_r)
+    k_values = ripley_k_function(xy, r=radii, br=1500)
 
     l_values = ripley_l_function(k_values=k_values)
 
