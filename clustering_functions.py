@@ -340,18 +340,90 @@ def save_dbscan_results(data, n_channels, outpath, filt=0):
 
 def load_dbscan_data(path):
 
+    """
+    This function loads the file containing the results of HDBSCAN.
+
+    In: path---file path for HDBSCAN results (str)
+
+    Out: data---HDBSCAN results (np array)
+    """
+
     data = np.genfromtxt(path, dtype=float, delimiter=',',
                          skip_header=1)
     
     return data.reshape(-1, 13)
 
-def calc_percent_coloc(dbscan_data):
+def calc_percent_coloc(dbscan_data, threshold=0.4):
 
-    pass
+    """
+    This function calculates the percentage of colocalised molecules for each channel. Colocalisation is 
+    defined as molecules with a colocalisation score above a threshold. By default, this is set to 0.4
 
-def plot_bar_percent_coloc(percent_ch1, percent_ch2, name_ch1, name_ch2):
+    In: dbscan_data---results from HDSCAN (np array)
+    threshold---the number above which a molecule is considered to be colocalised (float)
 
-    pass
+    Out: coloc_percent_ch1---the percentage of molecules that are colocalised for the first channel (float)
+    coloc_percent_ch2---the percentage of molecules that are colocalised for the second channel (float)
+    """
+
+    ch1 = dbscan_data[(dbscan_data[:, -4] == 1)]
+
+    ch2 = dbscan_data[(dbscan_data[:, -4] == 2)]
+
+    coloc_percent_ch1 = ch1[(ch1[:, -3] > threshold)].shape[0] * 100 / ch1.shape[0]
+
+    coloc_percent_ch2 = ch2[(ch2[:, -3] > threshold)].shape[0] * 100 / ch2.shape[0]
+
+    return coloc_percent_ch1, coloc_percent_ch2
+
+def plot_bar_percent_coloc(percent_ch1, percent_ch2, name_ch1, name_ch2, out):
+
+    """"
+    This function plots the percentage of colocalised molecules for each channel as a bar plot.
+
+    In: percent_ch1---percentage of colocalised molecules for channel 1 (float)
+    percent_ch2---same as above but for channel 2 (float)
+    name_ch1---the name of channel 1, typically its colour (str)
+    name_ch2---same but for channel 2
+    out---path where bar plot will be saved.
+
+    Out: None but a .png file will be saved in the specified folder.
+    """
+
+    mpl.rcParams['font.family'] = 'sans-serif'
+    mpl.rcParams['font.size'] = 20
+
+    fig, ax = plt.subplots(figsize=(7, 7), dpi=500)
+
+    ax.bar([name_ch1, name_ch2], [percent_ch1, percent_ch2])
+
+    ratio = 1.0
+
+    x_left, x_right = ax.get_xlim()
+    y_low, y_high = ax.get_ylim()
+    ax.set_aspect(abs((x_right-x_left)/(y_low-y_high)) * ratio)
+
+    ax.tick_params(axis='y', which='major', length=6, direction='in')
+    ax.tick_params(axis='y', which='minor', length=3, direction='in')
+
+    ax.yaxis.set_minor_locator(AutoMinorLocator(10))
+
+    ax.xaxis.label.set_color('black')
+    ax.yaxis.label.set_color('black')
+
+    ax.spines['bottom'].set_color('black')
+    ax.spines['top'].set_color('black')
+    ax.spines['right'].set_color('black')
+    ax.spines['left'].set_color('black')
+    ax.spines['bottom'].set_linewidth(1.0)
+    ax.spines['top'].set_linewidth(1.0)
+    ax.spines['right'].set_linewidth(1.0)
+    ax.spines['left'].set_linewidth(1.0)
+
+    ax.set_ylabel('Colocalised molecules (%)', labelpad=12, fontsize=28)
+
+    plt.savefig(out + '/coloc_percent.png')
+
 
 def separate_coloc_data(dbscan_data, threshold=0.4):
 
