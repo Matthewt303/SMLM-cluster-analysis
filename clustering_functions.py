@@ -816,9 +816,12 @@ def plot_boxplot(data: 'np.ndarray[np.float64]', statistic: str, out: str):
     mpl.rcParams['font.family'] = 'sans-serif'
     mpl.rcParams['font.size'] = 11
 
+    medianprops = dict(linestyle='-', linewidth=2.5, color='midnightblue')
+    boxprops = dict(linestyle='-', linewidth=3.5, coloc='black')
+
     fig, ax = plt.subplots(figsize=(8, 8), dpi=500)
 
-    ax.boxplot(data)
+    ax.boxplot(data, medianprops=medianprops, boxprops=boxprops, showfliers=False)
 
     ratio = 1.0
 
