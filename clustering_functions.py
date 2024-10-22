@@ -13,7 +13,7 @@ from scipy.spatial import ConvexHull
 from sklearn.metrics import pairwise_distances
 import cv2 as cv
 
-def user_input():
+def user_input() -> str:
 
     """
     Accepts user input.
@@ -47,7 +47,7 @@ def user_input():
         
     return input_text
 
-def load_locs(path: str, channels=1):
+def load_locs(path: str, channels: int=1) -> 'np.ndarray[np.float64]':
 
     """
     Extract localisation data from .csv file, preferably from ThunderSTORM
@@ -69,7 +69,7 @@ def load_locs(path: str, channels=1):
 
         return locs.reshape(-1, 11)
 
-def extract_xy(locs):
+def extract_xy(locs: 'np.ndarray[np.float64]') -> 'np.ndarray[np.float64]': 
 
     """
     Extract xy localisations.
@@ -81,7 +81,7 @@ def extract_xy(locs):
 
     return locs[:, 2:4].reshape(-1, 2)
 
-def generate_radii(bounding_radius, increment):
+def generate_radii(bounding_radius: float, increment: float) -> list:
 
     """
     Generate a list of radii for cluster detection via Ripley functions.
@@ -99,7 +99,7 @@ def generate_radii(bounding_radius, increment):
 
     return radii[1:]
 
-def ripley_k_function(xy_data, r, br):
+def ripley_k_function(xy_data: 'np.ndarray[np.float64]', r: list, br: float) -> 'np.ndarray[np.float64]':
 
     """
     2D Ripley's K=function. Converts result to numpy array.
@@ -115,7 +115,7 @@ def ripley_k_function(xy_data, r, br):
     
     return np.array(k).reshape(len(k), 1)
 
-def ripley_l_function(k_values):
+def ripley_l_function(k_values: 'np.ndarray[np.float64]') -> 'np.ndarray[np.float64]':
 
     """
     2D Ripley's L-function, normalized such that the expected value is r.
@@ -128,7 +128,7 @@ def ripley_l_function(k_values):
 
     return np.sqrt(k_values / np.pi)
 
-def ripley_h_function(l_values, radii):
+def ripley_h_function(l_values: 'np.ndarray[np.float64]', radii: list) -> 'np.ndarray[np.float64]':
 
     """
     2D Ripley's H-function, normalized such that the expected value is 0.
@@ -141,7 +141,7 @@ def ripley_h_function(l_values, radii):
 
     return l_values - np.array(radii).reshape(len(radii), 1)
 
-def plot_ripley_h(h_values, radii, out):
+def plot_ripley_h(h_values: 'np.ndarray[np.float64]', radii: list, out: str):
 
     """
     Plots Ripley's H-function against radii.
@@ -158,9 +158,9 @@ def plot_ripley_h(h_values, radii, out):
 
     # Set font type and size for axis values
     mpl.rcParams['font.family'] = 'sans-serif'
-    mpl.rcParams['font.size'] = 20
+    mpl.rcParams['font.size'] = 10
 
-    fig, ax = plt.subplots(figsize=(7, 7), dpi=500)
+    fig, ax = plt.subplots(figsize=(8, 8), dpi=500)
 
     # Plot Ripley's H-function against radii
     ax.plot(radii, h_values, 'b', linewidth=5.0)
@@ -199,12 +199,12 @@ def plot_ripley_h(h_values, radii, out):
     ax.spines['left'].set_linewidth(1.0)
 
     # Axis labels
-    ax.set_xlabel('Radius (nm)', labelpad=6, fontsize=30)
-    ax.set_ylabel('H(r)', labelpad=2, fontsize=30)
+    ax.set_xlabel('Radius (nm)', labelpad=6, fontsize=20)
+    ax.set_ylabel('H(r)', labelpad=2, fontsize=20)
 
     plt.savefig(out + '/ripley_hfunction.png')
 
-def calculate_rmax(h_values, radii):
+def calculate_rmax(h_values: 'np.ndarray[np.float64]', radii: list) -> float:
 
     """
     Calculate the radius at which Ripley's H-function is at a maximum
@@ -217,7 +217,7 @@ def calculate_rmax(h_values, radii):
 
     return radii[h_values.argmax()]
 
-def save_max_r(outpath, max_r):
+def save_max_r(outpath: str, max_r: float):
 
     """
     Save the value of the radius at which Ripley's H-function is at a maximum
@@ -228,7 +228,7 @@ def save_max_r(outpath, max_r):
         f.write('The maximum value of r is: ' + str(max_r)
                 + ' nm')
 
-def hdbscan(locs, min_n):
+def hdbscan(locs: 'np.ndarray[np.float64]', min_n: int) -> 'np.ndarray[np.float64]':
 
     """"
     HDBSCAN clustering of localization data. Returns the localisation data
@@ -256,7 +256,7 @@ def hdbscan(locs, min_n):
     # Combine localisation data, labels, and probabilities
     return all_data
 
-def denoise_data(dbscan_data, min_n):
+def denoise_data(dbscan_data: 'np.ndarray[np.float64]', min_n: int) -> 'np.ndarray[np.float64]':
 
     """
     Removes clusters below a minimum localizations threshold and noise.
@@ -283,7 +283,7 @@ def denoise_data(dbscan_data, min_n):
     
     return noiseless_data
 
-def save_dbscan_results(data, n_channels, outpath, filt=0):
+def save_dbscan_results(data: 'np.ndarray[np.float64]', n_channels: int, outpath: str, filt: int=0):
 
     """
     Convert dbscan results to dataframe and save as .csv. Columns change
@@ -340,7 +340,7 @@ def save_dbscan_results(data, n_channels, outpath, filt=0):
 
 ## Cluster analysis functions
 
-def load_dbscan_data(path):
+def load_dbscan_data(path: str) -> 'np.ndarray[np.float64]':
 
     """
     This function loads the file containing the results of HDBSCAN.
@@ -355,7 +355,7 @@ def load_dbscan_data(path):
     
     return data.reshape(-1, 13)
 
-def calc_percent_coloc(dbscan_data, threshold=0.4):
+def calc_percent_coloc(dbscan_data: 'np.ndarray[np.float64]', threshold: float=0.4) -> float:
 
     """
     This function calculates the percentage of colocalised molecules for each channel. Colocalisation is 
@@ -378,7 +378,8 @@ def calc_percent_coloc(dbscan_data, threshold=0.4):
 
     return coloc_percent_ch1, coloc_percent_ch2
 
-def plot_bar_percent_coloc(percent_ch1, percent_ch2, name_ch1, name_ch2, out):
+def plot_bar_percent_coloc(percent_ch1: float, percent_ch2: float,
+                           name_ch1: str, name_ch2: str, out: str):
 
     """"
     This function plots the percentage of colocalised molecules for each channel as a bar plot.
@@ -393,11 +394,12 @@ def plot_bar_percent_coloc(percent_ch1, percent_ch2, name_ch1, name_ch2, out):
     """
 
     mpl.rcParams['font.family'] = 'sans-serif'
-    mpl.rcParams['font.size'] = 20
+    mpl.rcParams['font.size'] = 11
 
-    fig, ax = plt.subplots(figsize=(7, 7), dpi=500)
+    fig, ax = plt.subplots(figsize=(8, 8), dpi=500)
 
-    ax.bar([name_ch1, name_ch2], [percent_ch1, percent_ch2])
+    ax.bar([name_ch1, name_ch2], [percent_ch1, percent_ch2],
+           color=['midnightblue', 'darkred'])
 
     ratio = 1.0
 
@@ -422,12 +424,12 @@ def plot_bar_percent_coloc(percent_ch1, percent_ch2, name_ch1, name_ch2, out):
     ax.spines['right'].set_linewidth(1.0)
     ax.spines['left'].set_linewidth(1.0)
 
-    ax.set_ylabel('Colocalised molecules (%)', labelpad=12, fontsize=28)
+    ax.set_ylabel('Colocalised molecules (%)', labelpad=12, fontsize=20)
 
     plt.savefig(out + '/coloc_percent.png')
 
 
-def separate_coloc_data(dbscan_data, threshold=0.4):
+def separate_coloc_data(dbscan_data: 'np.ndarray[np.float64]', threshold: float=0.4) -> 'np.ndarray[np.float64]':
 
     """
     This function separates the results from HDBSCAN into two separate arrays depending
@@ -446,7 +448,7 @@ def separate_coloc_data(dbscan_data, threshold=0.4):
 
     return no_coloc.reshape(-1, 13), coloc.reshape(-1, 13)
 
-def calculate_intensity(points):
+def calculate_intensity(points: 'np.ndarray[np.float64]') -> int:
 
     """
     Calculates cluster intensity, i.e. how many localisations per cluster.
@@ -459,7 +461,7 @@ def calculate_intensity(points):
 
     return np.size(points, axis=0)
 
-def calculate_center_of_mass(points):
+def calculate_center_of_mass(points: 'np.ndarray[np.float64]') -> 'np.ndarray[np.float64]':
 
     """
     Calculates cluster centroid.
@@ -473,7 +475,7 @@ def calculate_center_of_mass(points):
 
     return center
 
-def calculate_clust_area_perim(points):
+def calculate_clust_area_perim(points: 'np.ndarray[np.float64]') -> float:
 
     """
     Calculates cluster area and perimeter with the Convexhull method.
@@ -488,7 +490,7 @@ def calculate_clust_area_perim(points):
 
     return ConvexHull(points).volume, ConvexHull(points).area
 
-def calculate_circularity(perimeter, area):
+def calculate_circularity(perimeter: float, area: float) -> float:
 
     """
     Calculates circularity by taking the ratio of the area to the perimeter.
@@ -501,7 +503,7 @@ def calculate_circularity(perimeter, area):
 
     return 4 * np.pi * area / perimeter**2 
 
-def calculate_radius(points, center):
+def calculate_radius(points: 'np.ndarray[np.float64]', center: 'np.ndarray[np.float64]') -> float:
 
     """
     Radius calculation. First calculates the pairwise distance of all
@@ -516,7 +518,7 @@ def calculate_radius(points, center):
     
     return np.max(pairwise_distances(points, center))
 
-def analyse_clusters(dbscan_data):
+def analyse_clusters(dbscan_data: 'np.ndarray[np.float64]') -> 'np.ndarray[np.float64]':
 
     """
     This function loops through each cluster label, extracts the xy localisations,
@@ -555,7 +557,7 @@ def analyse_clusters(dbscan_data):
         
     return np.array(analysis_results).reshape(-1, 7)
 
-def filter_clusters(cluster_data):
+def filter_clusters(cluster_data: 'np.ndarray[np.float64]') -> 'np.ndarray[np.float64]':
 
     """
     Remove clusters with very large radii or very high
@@ -576,7 +578,7 @@ def filter_clusters(cluster_data):
     return filt_all
 
 
-def convert_to_dataframe(filt_cluster_data):
+def convert_to_dataframe(filt_cluster_data: 'np.ndarray[np.float64]') -> pd.DataFrame:
 
     """
     Converts cluster analysis results to a dataframe.
@@ -601,7 +603,7 @@ def convert_to_dataframe(filt_cluster_data):
 
     return cluster_data_df
     
-def save_cluster_analysis(filt_cluster_data, outpath, coloc=0):
+def save_cluster_analysis(filt_cluster_data: pd.DataFrame, outpath: str, coloc: int=0):
 
     """
     Save results of cluster analysis as a .csv file.
@@ -629,7 +631,7 @@ def save_cluster_analysis(filt_cluster_data, outpath, coloc=0):
         filt_cluster_data.to_csv(outpath + '/cluster_analysis_coloc_ch2.csv', sep=',',
                                  index=False)
 
-def plot_histogram(data, title, out, coloc=0):
+def plot_histogram(data: pd.DataFrame, title: str, out: str, coloc: int=0):
 
     """
     Plots a histogram for a column of data.
@@ -648,11 +650,12 @@ def plot_histogram(data, title, out, coloc=0):
     weights = np.ones_like(data) / float(len(data))
 
     mpl.rcParams['font.family'] = 'sans-serif'
-    mpl.rcParams['font.size'] = 20
+    mpl.rcParams['font.size'] = 11
 
-    fig, ax = plt.subplots(figsize=(7, 7), dpi=500)
+    fig, ax = plt.subplots(figsize=(8, 8), dpi=500)
 
-    plt.hist(data, bins=20, weights=weights, edgecolor='black', linewidth=1.1, color='C3')
+    plt.hist(data, bins=20, weights=weights, edgecolor='black',
+             linewidth=1.1, color='darkred')
 
     ax.set_xlim(right=np.max(data) + 0.05 * np.max(data))
     
@@ -662,10 +665,10 @@ def plot_histogram(data, title, out, coloc=0):
     y_low, y_high = ax.get_ylim()
     ax.set_aspect(abs((x_right-x_left)/(y_low-y_high)) * ratio)
 
-    ax.tick_params(axis='y', which='major', length=10, direction='in')
-    ax.tick_params(axis='y', which='minor', length=5, direction='in')
-    ax.tick_params(axis='x', which='major', length=10, direction='in')
-    ax.tick_params(axis='x', which='minor', length=5, direction='in')
+    ax.tick_params(axis='y', which='major', length=6, direction='in')
+    ax.tick_params(axis='y', which='minor', length=3, direction='in')
+    ax.tick_params(axis='x', which='major', length=6, direction='in')
+    ax.tick_params(axis='x', which='minor', length=3, direction='in')
 
     ax.xaxis.set_minor_locator(AutoMinorLocator(10))
     ax.yaxis.set_minor_locator(AutoMinorLocator(10))
@@ -682,8 +685,8 @@ def plot_histogram(data, title, out, coloc=0):
     ax.spines['right'].set_linewidth(1.0)
     ax.spines['left'].set_linewidth(1.0)
 
-    ax.set_xlabel(title, labelpad=6, fontsize=30)
-    ax.set_ylabel('Frequency', labelpad=2, fontsize=30)
+    ax.set_xlabel(title, labelpad=6, fontsize=20)
+    ax.set_ylabel('Frequency', labelpad=6, fontsize=20)
 
     if coloc == 0:
     
@@ -697,7 +700,7 @@ def plot_histogram(data, title, out, coloc=0):
 
         plt.savefig(out + '/' + title + '_ch2_coloc.png')
 
-def plot_cluster_statistics(filt_cluster_data, outpath, coloc=0):
+def plot_cluster_statistics(filt_cluster_data: pd.DataFrame, outpath: str, coloc: int=0):
 
     """
     Plots and saves histograms for cluster intensity, area, and radius.
@@ -716,7 +719,7 @@ def plot_cluster_statistics(filt_cluster_data, outpath, coloc=0):
                       filt_cluster_data.columns[i], out=outpath,
                       coloc=coloc)
 
-def calculate_statisitcs(filt_cluster_data):
+def calculate_statistics(filt_cluster_data: pd.DataFrame) -> dict:
 
     """
     This function calculates the mean, median, and standard deviation
@@ -745,7 +748,7 @@ def calculate_statisitcs(filt_cluster_data):
 
     return clust_statistics
 
-def save_statistics(cluster_statistics, out, coloc=0):
+def save_statistics(cluster_statistics: dict, out: str, coloc: int=0):
 
     """
     This function saves the statistics as a .txt file.
@@ -786,7 +789,7 @@ def save_statistics(cluster_statistics, out, coloc=0):
                 print(stat + ' ' + str(cluster_statistics[stat]) + '\n',
                     file=f)
 
-def plot_boxplot(data, statistic, out):
+def plot_boxplot(data: 'np.ndarray[np.float64]', statistic: str, out: str):
 
     """
     This function plots a boxplot.
@@ -801,7 +804,7 @@ def plot_boxplot(data, statistic, out):
     """
 
     mpl.rcParams['font.family'] = 'sans-serif'
-    mpl.rcParams['font.size'] = 20
+    mpl.rcParams['font.size'] = 11
 
     fig, ax = plt.subplots(figsize=(8, 8), dpi=500)
 
@@ -816,7 +819,7 @@ def plot_boxplot(data, statistic, out):
     ax.tick_params(axis='y', which='major', length=6, direction='in')
     ax.tick_params(axis='y', which='minor', length=3, direction='in')
 
-    ax.set_xticklabels(['Non-colocalised', 'Colocalised'], labelpad=4, fontsize=16)
+    ax.set_xticklabels(['Non-colocalised', 'Colocalised'], labelpad=4, fontsize=20)
 
     ax.yaxis.set_minor_locator(AutoMinorLocator(10))
 
@@ -832,11 +835,11 @@ def plot_boxplot(data, statistic, out):
     ax.spines['right'].set_linewidth(1.0)
     ax.spines['left'].set_linewidth(1.0)
 
-    ax.set_ylabel(statistic, labelpad=12, fontsize=28)
+    ax.set_ylabel(statistic, labelpad=12, fontsize=20)
 
     plt.savefig(out + '/' + statistic + '.png')
 
-def compare_clust_size(data, coloc_data, out):
+def compare_clust_size(data: 'np.ndarray[np.float64]', coloc_data: 'np.ndarray[np.float64]', out: str):
 
     """
     This function extracts the cluster radii from colocalised molecules and non-colocalised
@@ -855,7 +858,7 @@ def compare_clust_size(data, coloc_data, out):
 
     plot_boxplot(radii_data, statistic='Radius (nm)', out=out)
 
-def compare_clust_circularity(data, coloc_data, out):
+def compare_clust_circularity(data: 'np.ndarray[np.float64]', coloc_data: 'np.ndarray[np.float64]', out: str):
 
     """
     This function extracts the cluster circularity from colocalised molecules and non-colocalised
@@ -876,14 +879,14 @@ def compare_clust_circularity(data, coloc_data, out):
 
 ## Cluster visualisation
 
-def make_circles(x, y, r):
+def make_circles(x: 'np.ndarray[np.float64]', y: 'np.ndarray[np.float64]', r: 'np.ndarray[np.float64]') -> list:
 
     circles = [plt.Circle((xi, yi), radius=c, linewidth=0)
                for xi, yi, c in zip(x, y, r)]
     
     return circles
 
-def extract_xyr(cluster_data):
+def extract_xyr(cluster_data: 'np.ndarray[np.float64]') -> 'np.ndarray[np.float64]':
 
     x = cluster_data[cluster_data.columns[0]]
 
@@ -893,11 +896,11 @@ def extract_xyr(cluster_data):
 
     return x, y, r
 
-def scale(data, scaling_factor):
+def scale(data: 'np.ndarray[np.float64]', scaling_factor: float) -> 'np.ndarray[np.float64]':
 
     return data / scaling_factor
 
-def plot_clusters(cluster_data, loc_data, out, title):
+def plot_clusters(cluster_data: 'np.ndarray[np.float64]', loc_data: 'np.ndarray[np.float64]', out: str, title: str):
 
     x, y, r = extract_xyr(cluster_data=cluster_data)
 
@@ -954,7 +957,7 @@ def plot_clusters(cluster_data, loc_data, out, title):
 
 ## Functions for two-color STORM
 
-def extract_xy_cr(locs):
+def extract_xy_cr(locs: 'np.ndarray[np.float64]') -> 'np.ndarray[np.float32]':
 
     """
     Extract xy locs again but as 32 bit floating integers.
@@ -966,7 +969,7 @@ def extract_xy_cr(locs):
 
     return locs[:, 2:4].reshape(-1, 2).astype(np.float32)
 
-def calculate_transformation_matrix(channel1, channel2):
+def calculate_transformation_matrix(channel1: 'np.ndarray[np.float32]', channel2: 'np.ndarray[np.float32]') -> 'np.ndarray[np.float32]':
 
     """ Note: this function registers the first channel to the second channel
     I.e. it shifts the first channel to the second
@@ -982,7 +985,7 @@ def calculate_transformation_matrix(channel1, channel2):
 
     return M
 
-def register_channel(channel, matrix):
+def register_channel(channel: 'np.ndarray[np.float64]', matrix: 'np.ndarray[np.float32]') -> 'np.ndarray[np.float64]':
 
     """
     This function takes a transformation matrix, applies the matrix
@@ -1004,7 +1007,7 @@ def register_channel(channel, matrix):
 
     return corrected_channel.reshape(channel.shape[0], 2)
 
-def measure_accuracy(bead1_loc_reg, bead2_loc):
+def measure_accuracy(bead1_loc_reg: 'np.ndarray[np.float32]', bead2_loc: 'np.ndarray[np.float32]') -> 'np.ndarray[np.float32]':
 
     n_neighbors = np.min(pairwise_distances(bead1_loc_reg, bead2_loc))
 
@@ -1063,7 +1066,7 @@ def compare_channels(channel1, channel2):
 
     plt.show()
 
-def save_corrected_channels(cor_locs, locs, out):
+def save_corrected_channels(cor_locs: 'np.ndarray[np.float64]', locs:'np.ndarray[np.float64]', out: str):
 
     """
     This function combines the registered xy localisations with the
@@ -1099,7 +1102,7 @@ def save_corrected_channels(cor_locs, locs, out):
 
 ## Functions for two-color STORM---CBC analysis
 
-def add_channel(locs, channel: int):
+def add_channel(locs: 'np.ndarray[np.float64]', channel: int) -> 'np.ndarray[np.float64]':
 
     """
     This function adds a column to specify the appropriate channel
@@ -1117,7 +1120,7 @@ def add_channel(locs, channel: int):
     return np.hstack((locs, channel_col)).reshape(locs.shape[0], 10)
 
 @jit(nopython=True, nogil=True, cache=False)
-def calc_counts_with_radius(locs, x0, y0, radii):
+def calc_counts_with_radius(locs: 'np.ndarray[np.float64]', x0: float, y0: float, radii: list) -> 'np.ndarray[np.int64]':
 
     """
     Calculate number of localisations from a list of increasing radii.
@@ -1146,7 +1149,7 @@ def calc_counts_with_radius(locs, x0, y0, radii):
     return loc_counts_with_r
 
 @jit(nopython=True, nogil=True, cache=False)
-def calc_loc_distribution(counts, radii):
+def calc_loc_distribution(counts: 'np.ndarray[np.int64]', radii: list) -> 'np.ndarray[np.float64]':
 
     """
     Calculates distribution of number of localisations with increasing radii
@@ -1165,7 +1168,7 @@ def calc_loc_distribution(counts, radii):
     return cbc
 
 @jit(nopython=True, nogil=True, cache=False)
-def calc_all_distributions(channel1_locs, channel2_locs, radii):
+def calc_all_distributions(channel1_locs: 'np.ndarray[np.float64]', channel2_locs: 'np.ndarray[np.float64]', radii: list) -> 'np.ndarray[np.float64]':
 
     """
     Combines the previous two functions to calculate distributions along
@@ -1205,7 +1208,7 @@ def calc_all_distributions(channel1_locs, channel2_locs, radii):
     
     return dist_ch1, dist_ch2
 
-def calc_spearman_cor_coeff(ch1_dist, ch2_dist):
+def calc_spearman_cor_coeff(ch1_dist: 'np.ndarray[np.float64]', ch2_dist: 'np.ndarray[np.float64]') -> 'np.ndarray[np.float64]':
 
     """
     Calculate Spearman correlation coefficients on a row-by-row basis
@@ -1234,7 +1237,7 @@ def calc_spearman_cor_coeff(ch1_dist, ch2_dist):
     return spearman_cor_coeffs.reshape(ch1_dist.shape[0], 1)
 
 @jit(nopython=True, nogil=True, cache=False)
-def calculate_nneighbor_dist(ch1_locs, ch2_locs, radii):
+def calculate_nneighbor_dist(ch1_locs: 'np.ndarray[np.float64]', ch2_locs: 'np.ndarray[np.float64]', radii: list) -> 'np.ndarray[np.float64]':
 
     """
     Calculate the nearest neighbours for a particular localisation
@@ -1263,7 +1266,7 @@ def calculate_nneighbor_dist(ch1_locs, ch2_locs, radii):
     return distances / max(radii)
 
 @jit(nopython=True, nogil=True, cache=False)
-def calc_coloc_values(spearman, ch1_locs, ch2_locs, radii):
+def calc_coloc_values(spearman: 'np.ndarray[np.float64]', ch1_locs: 'np.ndarray[np.float64]', ch2_locs: 'np.ndarray[np.float64]', radii: list) -> 'np.ndarray[np.float64]':
 
     """
     This function weights the spearman correlation coefficients
@@ -1284,7 +1287,7 @@ def calc_coloc_values(spearman, ch1_locs, ch2_locs, radii):
 
     return cbcs.reshape(ch1_locs.shape[0], 1)
 
-def add_coloc_values(locs, coloc_values):
+def add_coloc_values(locs: 'np.ndarray[np.float64]', coloc_values: 'np.ndarray[np.float64]') -> 'np.ndarray[np.float64]':
 
     """
     Add correlation coefficients to localisation data.
@@ -1297,7 +1300,7 @@ def add_coloc_values(locs, coloc_values):
 
     return np.hstack((locs, coloc_values)).reshape(locs.shape[0], 11)
 
-def save_locs_colocs(processed_data, channel, out):
+def save_locs_colocs(processed_data: 'np.ndarray[np.float64]', channel: int, out: str):
 
     """
     Save localisations with correlation coefficients as .csv file. Note
@@ -1328,7 +1331,7 @@ def save_locs_colocs(processed_data, channel, out):
     locs_proc.to_csv(out + '/processed_locs_' +
     str(channel) + '.csv', index=False)
 
-def combine_channel_locs(ch1_locs, ch2_locs):
+def combine_channel_locs(ch1_locs: 'np.ndarray[np.float64]', ch2_locs: 'np.ndarray[np.float64]'):
 
     """
     Combines the localisations of channel one, and two. Recommended to do
@@ -1501,7 +1504,7 @@ def cluster_analysis_all():
 
     plot_cluster_statistics(filt_cluster_data=clust_filt_df, outpath=outpath)
 
-    cluster_stats = calculate_statisitcs(filt_cluster_data=clust_filt_df)
+    cluster_stats = calculate_statistics(filt_cluster_data=clust_filt_df)
 
     save_statistics(cluster_stats, out=outpath)
 
@@ -1514,6 +1517,46 @@ def cluster_analysis_coloc():
 
     print('Enter folder for things to be saved.')
     outpath = user_input()
+
+    print('Cluster analysis has started.')
+
+    dbscan_filt = load_dbscan_data(path=path)
+
+    ch1_percent, ch2_percent = calc_percent_coloc(dbscan_data=dbscan_filt)
+
+    plot_bar_percent_coloc(percent_ch1=ch1_percent, percent_ch2=ch2_percent,
+                           name_ch1='ACE-2', name_ch2='Spike protein', out=outpath)
+
+    no_coloc, coloc = separate_coloc_data(dbscan_data=dbscan_filt)
+
+    no_coloc_analysed, coloc_analysed = analyse_clusters(dbscan_data=no_coloc), analyse_clusters(dbscan_data=coloc)
+
+    no_coloc_analysed_filt, coloc_analysed_filt = filter_clusters(cluster_data=no_coloc_analysed), filter_clusters(coloc_analysed)
+
+    no_coloc_df, coloc_df = convert_to_dataframe(filt_cluster_data=no_coloc_analysed_filt), convert_to_dataframe(coloc_analysed_filt)
+
+    save_cluster_analysis(filt_cluster_data=no_coloc_df, outpath=outpath, coloc=1)
+
+    save_cluster_analysis(filt_cluster_data=coloc_df, outpath=outpath, coloc=2)
+
+    plot_cluster_statistics(filt_cluster_data=no_coloc_df, outpath=outpath, coloc=1)
+
+    plot_cluster_statistics(filt_cluster_data=coloc_df, outpath=outpath, coloc=2)
+
+    no_coloc_clust_stats = calculate_statistics(filt_cluster_data=no_coloc_df)
+
+    coloc_clust_stats = calculate_statistics(filt_cluster_data=coloc_df)
+
+    save_statistics(no_coloc_clust_stats, out=outpath, coloc=1)
+
+    save_statistics(coloc_clust_stats, out=outpath, coloc=2)
+
+    compare_clust_size(data=no_coloc_analysed_filt, coloc_data=coloc_analysed_filt,
+                       out=outpath)
+    
+    compare_clust_circularity(data=no_coloc_analysed_filt, coloc_data=coloc_analysed_filt,
+                              out=outpath)
+    
 
 def main():
 
