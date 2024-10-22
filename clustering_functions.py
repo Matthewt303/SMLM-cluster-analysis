@@ -789,6 +789,16 @@ def save_statistics(cluster_statistics: dict, out: str, coloc: int=0):
                 print(stat + ' ' + str(cluster_statistics[stat]) + '\n',
                     file=f)
 
+def mann_whitney_utest(data1: 'np.ndarray[np.float64]', data2: 'np.ndarray[np.float64]', out: str):
+
+    U1, p = stats.mannwhitneyu(data1, data2)
+
+    with open(out + 'mann_whitney_utest_result.txt', 'w') as f:
+
+        f.write('U-statistic: ' + str(U1) + '\n')
+        f.write('p-value: ' + str(p), + '\n')
+
+
 def plot_boxplot(data: 'np.ndarray[np.float64]', statistic: str, out: str):
 
     """
@@ -858,6 +868,8 @@ def compare_clust_size(data: 'np.ndarray[np.float64]', coloc_data: 'np.ndarray[n
 
     plot_boxplot(radii_data, statistic='Radius (nm)', out=out)
 
+    mann_whitney_utest(data1=no_loc_radii, data2=loc_radii, out=out)
+
 def compare_clust_circularity(data: 'np.ndarray[np.float64]', coloc_data: 'np.ndarray[np.float64]', out: str):
 
     """
@@ -871,11 +883,13 @@ def compare_clust_circularity(data: 'np.ndarray[np.float64]', coloc_data: 'np.nd
     Out: None but a boxplot comparing cluster circularity will be saved to the specified folder.
     """
 
-    no_loc_radii, loc_radii = data[:, 4], coloc_data[:, 4]
+    no_loc_circ, loc_circ = data[:, 4], coloc_data[:, 4]
 
-    radii_data = [no_loc_radii, loc_radii]
+    radii_data = [no_loc_circ, loc_circ]
 
     plot_boxplot(radii_data, statistic='Circularity', out=out)
+
+    mann_whitney_utest(data1=no_loc_circ, data2=loc_circ, out=out)
 
 ## Cluster visualisation
 
