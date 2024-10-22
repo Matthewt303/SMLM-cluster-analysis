@@ -791,6 +791,18 @@ def save_statistics(cluster_statistics: dict, out: str, coloc: int=0):
 
 def mann_whitney_utest(data1: 'np.ndarray[np.float64]', data2: 'np.ndarray[np.float64]', out: str):
 
+    """
+    This function carries out the Mann-Whitney U test, also known as the Wilcoxon summed rank test,
+    on two datasets.
+
+    In: data1---dataset of an independent variable (np array)
+    data2---dataset of second independent variable (np array)
+    out---output folder where the result will be saved (str).
+
+    Out:
+    .txt file with the U-statistic and significance value (float)
+    """
+
     U1, p = stats.mannwhitneyu(data1, data2)
 
     with open(out + 'mann_whitney_utest_result.txt', 'w') as f:
@@ -862,7 +874,8 @@ def compare_clust_size(data: 'np.ndarray[np.float64]', coloc_data: 'np.ndarray[n
     coloc_data---cluster data from colocalised molecules (np array)
     out---output folder where things will be saved (str)
 
-    Out: None but a boxplot comparing cluster radii will be saved to the specified folder.
+    Out: None but a boxplot comparing cluster radii will be saved to the specified folder, as
+    well as the result of the Mann-Whitney U test.
     """
 
     no_loc_radii, loc_radii = data[:, 3], coloc_data[:, 3]
@@ -883,7 +896,8 @@ def compare_clust_circularity(data: 'np.ndarray[np.float64]', coloc_data: 'np.nd
     coloc_data---cluster data from colocalised molecules (np array)
     out---output folder where things will be saved (str)
 
-    Out: None but a boxplot comparing cluster circularity will be saved to the specified folder.
+    Out: None but a boxplot comparing cluster circularity will be saved to the specified folder, as
+    well as the result of the Mann-Whitney U test.
     """
 
     no_loc_circ, loc_circ = data[:, 4], coloc_data[:, 4]
