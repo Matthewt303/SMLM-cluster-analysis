@@ -294,6 +294,8 @@ def save_dbscan_results(data, n_channels, outpath, filt=0):
     n_channels---the number of channels. One for single-color STORM data,
     two for two-color STORM, etc. (int)
     outpath---folder where results will be saved (str).
+    filt---whether the data has been filtered or not. 0 for no filtering,
+    1 for filtered (int).
     """
 
     if n_channels == 1:
