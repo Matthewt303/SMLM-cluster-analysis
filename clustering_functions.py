@@ -548,9 +548,9 @@ def analyse_clusters(dbscan_data: 'np.ndarray[np.float64]') -> 'np.ndarray[np.fl
 
         cluster_area, cluster_perim = calculate_clust_area_perim(cluster_points_xy)
 
-        cluster_radius = calculate_radius(cluster_points_xy, center=center.T)
+        cluster_radius = calculate_radius(cluster_points_xy, center.T)
 
-        circularity = calculate_circularity(perimeter=cluster_perim, area=cluster_area)
+        circularity = calculate_circularity(cluster_perim, cluster_area)
 
         analysis_results.append([center_of_mass[0], center_of_mass[1], cluster_area,
                                  cluster_radius, circularity, intensity, label])
@@ -884,7 +884,7 @@ def compare_clust_size(data: 'np.ndarray[np.float64]', coloc_data: 'np.ndarray[n
 
     plot_boxplot(radii_data, statistic='Radius (nm)', out=out)
 
-    mann_whitney_utest(data1=no_loc_radii, data2=loc_radii, out=out)
+    mann_whitney_utest(no_loc_radii, loc_radii, out=out)
 
 def compare_clust_circularity(data: 'np.ndarray[np.float64]', coloc_data: 'np.ndarray[np.float64]', out: str):
 
@@ -906,7 +906,7 @@ def compare_clust_circularity(data: 'np.ndarray[np.float64]', coloc_data: 'np.nd
 
     plot_boxplot(radii_data, statistic='Circularity', out=out)
 
-    mann_whitney_utest(data1=no_loc_circ, data2=loc_circ, out=out)
+    mann_whitney_utest(no_loc_circ, loc_circ, out=out)
 
 ## Cluster visualisation
 
@@ -1169,8 +1169,11 @@ def calc_counts_with_radius(locs: 'np.ndarray[np.float64]', x0: float, y0: float
 
     for i in range(1, len(radii)):
 
-        filt_locs = locs[((locs[:, 0] - x0)**2 + 
-                                (locs[:, 1] - y0)**2 < radii[i]**2)]
+        filt_locs_max_r = locs[((locs[:, 0] - x0)**2 + 
+                                (locs[:, 1] - y0)**2 < (2 + max(radii))**2)]
+
+        filt_locs = filt_locs_max_r[((filt_locs_max_r[:, 0] - x0)**2 + 
+                                (filt_locs_max_r[:, 1] - y0)**2 < radii[i]**2)]
         
         filt_locs = filt_locs[((filt_locs[:, 0] - x0)**2 + 
                                 (filt_locs[:, 1] - y0)**2 > radii[i-1]**2)]
@@ -1225,17 +1228,17 @@ def calc_all_distributions(channel1_locs: 'np.ndarray[np.float64]', channel2_loc
 
         # Channel 1
         ch1_counts = calc_counts_with_radius(
-            locs=channel1_locs, x0=x0, y0=y0, radii=radii
+            channel1_locs, x0, y0, radii
         )
 
-        dist_ch1 = calc_loc_distribution(counts=ch1_counts, radii=radii)
+        dist_ch1 = calc_loc_distribution(ch1_counts, radii)
 
         # Channel 2
         ch2_counts = calc_counts_with_radius(
-            locs=channel2_locs, x0=x0, y0=y0, radii=radii
+            channel2_locs, x0, y0, radii
         )
 
-        dist_ch2 = calc_loc_distribution(counts=ch2_counts, radii=radii)
+        dist_ch2 = calc_loc_distribution(ch2_counts, radii)
     
     return dist_ch1, dist_ch2
 
@@ -1466,26 +1469,22 @@ def two_color_analysis_all():
     
     radii = generate_radii(bounding_radius=200, increment=10)
 
-    gg_dist, gr_dist = calc_all_distributions(channel1_locs=green_xy,
-                                              channel2_locs=red_xy,
-                                              radii=radii)
+    gg_dist, gr_dist = calc_all_distributions(green_xy,
+                                              red_xy,
+                                              radii)
     
-    green_spearman = calc_spearman_cor_coeff(ch1_dist=gg_dist, ch2_dist=gr_dist)
+    green_spearman = calc_spearman_cor_coeff(gg_dist, gr_dist)
 
-    colocs = calc_coloc_values(spearman=green_spearman, ch1_locs=green_xy,
-                               ch2_locs=red_xy, radii=radii)
+    colocs = calc_coloc_values(green_spearman, green_xy, red_xy, radii)
 
     save_locs_colocs(add_coloc_values(locs=green, coloc_values=colocs),
                        channel=1, out=out)
     
-    rr_dist, rg_dist = calc_all_distributions(channel1_locs=red_xy,
-                                              channel2_locs=green_xy,
-                                              radii=radii)
+    rr_dist, rg_dist = calc_all_distributions(red_xy, green_xy, radii)
     
-    red_spearman = calc_spearman_cor_coeff(ch1_dist=rr_dist, ch2_dist=rg_dist)
+    red_spearman = calc_spearman_cor_coeff(rr_dist, rg_dist)
 
-    colocs_red = calc_coloc_values(spearman=red_spearman, ch1_locs=red_xy,
-                                   ch2_locs=green_xy, radii=radii)
+    colocs_red = calc_coloc_values(red_spearman, red_xy, green_xy, radii)
     
     save_locs_colocs(add_coloc_values(locs=red, coloc_values=colocs_red),
                      channel=2, out=out)
