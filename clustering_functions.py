@@ -1270,7 +1270,7 @@ def calc_spearman_cor_coeff(ch1_dist: 'np.ndarray[np.float64]', ch2_dist: 'np.nd
 
     return spearman_cor_coeffs.reshape(ch1_dist.shape[0], 1)
 
-@jit(nopython=True, nogil=True, cache=False)
+@jit(nopython=True, nogil=True, cache=False, parallel=True)
 def calculate_nneighbor_dist(ch1_locs: 'np.ndarray[np.float64]', ch2_locs: 'np.ndarray[np.float64]', radii: list) -> 'np.ndarray[np.float64]':
 
     """
@@ -1504,11 +1504,11 @@ def cluster_classification():
 
     data = load_locs(path=path, channels=2)
 
-    clusters = hdbscan(locs=data, min_n=4)
+    clusters = hdbscan(data, min_n=4)
 
-    save_dbscan_results(data=clusters, n_channels=2, outpath=outpath)
+    save_dbscan_results(clusters, n_channels=2, outpath=outpath)
 
-    dbscan_filt = denoise_data(dbscan_data=clusters, min_n=4)
+    dbscan_filt = denoise_data(clusters, min_n=4)
 
     save_dbscan_results(data=dbscan_filt, n_channels=2, outpath=outpath, filt=1)
 
@@ -1524,9 +1524,9 @@ def cluster_analysis_all():
     
     dbscan_filt = load_dbscan_data(path=path)
 
-    clust_analysed = analyse_clusters(dbscan_data=dbscan_filt)
+    clust_analysed = analyse_clusters(dbscan_filt)
 
-    clust_filt = filter_clusters(cluster_data=clust_analysed)
+    clust_filt = filter_clusters(clust_analysed)
 
     clust_filt_df = convert_to_dataframe(filt_cluster_data=clust_filt)
 
