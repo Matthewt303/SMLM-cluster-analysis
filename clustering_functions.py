@@ -519,16 +519,34 @@ def calculate_radius(points: 'np.ndarray[np.float64]', center: 'np.ndarray[np.fl
     
     return np.max(pairwise_distances(points, center))
 
+def calculate_cluster_density(intensity: int, area: float) -> float:
+
+    """
+    This function calculates the density of a cluster. The density is
+    defined as the number of molecules divided by the area of the cluster and
+    has units of molecules/um^2. The area in nm^2 is first converted to um^2 for
+    easier-to-read numbers.
+
+    In: intensity---the number of molecules in the cluster (int)
+    area---the cluster area (float)
+
+    Out: cluster density---the number of molecules per square micrometer.
+    """
+
+    area_in_um = area / 1000000
+
+    return intensity / area_in_um
+
 def analyse_clusters(dbscan_data: 'np.ndarray[np.float64]') -> 'np.ndarray[np.float64]':
 
     """
     This function loops through each cluster label, extracts the xy localisations,
-    then calculates cluster intensity, area, and radius.
+    then calculates cluster intensity, cluster density, area, and radius.
 
     In: dbscan_data---localization table with dbscan data (np array)
 
-    Out: n x 7 table containing the centroid, cluster area, cluster radius,
-    cluster circularity, cluster intensity, and cluster label (np array)
+    Out: n x 8 table containing the centroid, cluster area, cluster radius,
+    cluster circularity, cluster intensity, cluster denstiy, and cluster label (np array)
     """
 
     analysis_results = []
@@ -553,10 +571,12 @@ def analyse_clusters(dbscan_data: 'np.ndarray[np.float64]') -> 'np.ndarray[np.fl
 
         circularity = calculate_circularity(cluster_perim, cluster_area)
 
+        cluster_density = calculate_cluster_density(intensity, cluster_area)
+
         analysis_results.append([center_of_mass[0], center_of_mass[1], cluster_area,
-                                 cluster_radius, circularity, intensity, label])
+                                 cluster_radius, circularity, intensity, cluster_density, label])
         
-    return np.array(analysis_results).reshape(-1, 7)
+    return np.array(analysis_results).reshape(-1, 8)
 
 def filter_clusters(cluster_data: 'np.ndarray[np.float64]') -> 'np.ndarray[np.float64]':
 
@@ -591,12 +611,13 @@ def convert_to_dataframe(filt_cluster_data: 'np.ndarray[np.float64]') -> pd.Data
     """
 
     cols = [
-        'x[nm]',
-        'y[nm]',
-        'Area [nm^2]',
-        'Radius [nm]',
+        'x (nm)',
+        'y (nm)',
+        'Area (nm^2)',
+        'Radius (nm)',
         'Circularity',
         'Intensity',
+        'Density (n . um^-2)',
         'label'
     ]
 
@@ -624,12 +645,12 @@ def save_cluster_analysis(filt_cluster_data: pd.DataFrame, outpath: str, coloc: 
 
     elif coloc == 1:
 
-        filt_cluster_data.to_csv(outpath + '/cluster_analysis_coloc_ch1.csv', sep=',',
+        filt_cluster_data.to_csv(outpath + '/cluster_analysis_no_coloc.csv', sep=',',
                                  index=False)
     
     else:
 
-        filt_cluster_data.to_csv(outpath + '/cluster_analysis_coloc_ch2.csv', sep=',',
+        filt_cluster_data.to_csv(outpath + '/cluster_analysis_coloc.csv', sep=',',
                                  index=False)
 
 def plot_histogram(data: pd.DataFrame, title: str, out: str, coloc: int=0):
@@ -794,7 +815,7 @@ def mann_whitney_utest(data1: 'np.ndarray[np.float64]', data2: 'np.ndarray[np.fl
 
     """
     This function carries out the Mann-Whitney U test, also known as the Wilcoxon summed rank test,
-    on two datasets.
+    on two datasets. The alternative hypothesis is two-sided.
 
     In: data1---dataset of an independent variable (np array)
     data2---dataset of second independent variable (np array)
@@ -873,7 +894,8 @@ def compare_clust_size(data: 'np.ndarray[np.float64]', coloc_data: 'np.ndarray[n
 
     """
     This function extracts the cluster radii from colocalised molecules and non-colocalised
-    molecules and plots it as a boxplot.
+    molecules and plots it as a boxplot. A two-sided Mann-Whitney U test is also carried out
+    to test for significant difference.
 
     In: data---cluster data from non-colocalised molecules (np array)
     coloc_data---cluster data from colocalised molecules (np array)
@@ -895,7 +917,8 @@ def compare_clust_circularity(data: 'np.ndarray[np.float64]', coloc_data: 'np.nd
 
     """
     This function extracts the cluster circularity from colocalised molecules and non-colocalised
-    molecules and plots it as a boxplot.
+    molecules and plots it as a boxplot. A two-sided Mann-Whitney U test is also carried out
+    to test for significant difference.
 
     In: data---cluster data from non-colocalised molecules (np array)
     coloc_data---cluster data from colocalised molecules (np array)
@@ -912,6 +935,30 @@ def compare_clust_circularity(data: 'np.ndarray[np.float64]', coloc_data: 'np.nd
     plot_boxplot(radii_data, statistic='Circularity', out=out)
 
     mann_whitney_utest(no_loc_circ, loc_circ, statistic='Circularity', out=out)
+
+def compare_clust_density(data: 'np.ndarray[np.float64]', coloc_data: 'np.ndarray[np.float64]', out: str):
+
+    
+    """
+    This function extracts the cluster density from colocalised molecules and non-colocalised
+    molecules and plots it as a boxplot. A two-sided Mann-Whitney U test is also carried out
+    to test for significant difference.
+
+    In: data---cluster data from non-colocalised molecules (np array)
+    coloc_data---cluster data from colocalised molecules (np array)
+    out---output folder where things will be saved (str)
+
+    Out: None but a boxplot comparing cluster density will be saved to the specified folder, as
+    well as the result of the Mann-Whitney U test.
+
+    """
+    no_loc_density, loc_density = data[:, -2], coloc_data[:, -2]
+
+    density_data = [no_loc_density, loc_density]
+
+    plot_boxplot(density_data, statistic='Density (n . um^-2)', out=out)
+
+    mann_whitney_utest(no_loc_density, loc_density, statistic='Density (n . um^-2)', out=out)
 
 ## Cluster visualisation
 
@@ -1598,6 +1645,9 @@ def cluster_analysis_coloc():
     
     compare_clust_circularity(data=no_coloc_analysed_filt, coloc_data=coloc_analysed_filt,
                               out=outpath)
+    
+    compare_clust_density(data=no_coloc_analysed_filt, coloc_data=coloc_analysed_filt,
+                          out=outpath)
     
 
 def main():
