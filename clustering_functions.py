@@ -12,6 +12,7 @@ import matplotlib as mpl
 from scipy.spatial import ConvexHull
 from sklearn.metrics import pairwise_distances
 import cv2 as cv
+import time
 
 def user_input() -> str:
 
@@ -694,11 +695,11 @@ def plot_histogram(data: pd.DataFrame, title: str, out: str, coloc: int=0):
     
     elif coloc == 1:
 
-        plt.savefig(out + '/' + title + '_ch1_coloc.png')
+        plt.savefig(out + '/' + title + '_no_coloc.png')
     
     else:
 
-        plt.savefig(out + '/' + title + '_ch2_coloc.png')
+        plt.savefig(out + '/' + title + '_coloc.png')
 
 def plot_cluster_statistics(filt_cluster_data: pd.DataFrame, outpath: str, coloc: int=0):
 
@@ -773,7 +774,7 @@ def save_statistics(cluster_statistics: dict, out: str, coloc: int=0):
     
     elif coloc == 1:
 
-        with open(out + '/cluster_stats_summary_ch1_coloc.txt', 'w') as f:
+        with open(out + '/cluster_stats_summary_no_coloc.txt', 'w') as f:
             
             for stat in cluster_statistics:
 
@@ -782,14 +783,14 @@ def save_statistics(cluster_statistics: dict, out: str, coloc: int=0):
     
     else:
 
-        with open(out + '/cluster_stats_summary_ch2_coloc.txt', 'w') as f:
+        with open(out + '/cluster_stats_summary_coloc.txt', 'w') as f:
             
             for stat in cluster_statistics:
 
                 print(stat + ' ' + str(cluster_statistics[stat]) + '\n',
                     file=f)
 
-def mann_whitney_utest(data1: 'np.ndarray[np.float64]', data2: 'np.ndarray[np.float64]', out: str):
+def mann_whitney_utest(data1: 'np.ndarray[np.float64]', data2: 'np.ndarray[np.float64]', statistic: str, out: str):
 
     """
     This function carries out the Mann-Whitney U test, also known as the Wilcoxon summed rank test,
@@ -797,6 +798,7 @@ def mann_whitney_utest(data1: 'np.ndarray[np.float64]', data2: 'np.ndarray[np.fl
 
     In: data1---dataset of an independent variable (np array)
     data2---dataset of second independent variable (np array)
+    statistic---the parameter that will be compared (str).
     out---output folder where the result will be saved (str).
 
     Out:
@@ -805,13 +807,13 @@ def mann_whitney_utest(data1: 'np.ndarray[np.float64]', data2: 'np.ndarray[np.fl
 
     U1, p = stats.mannwhitneyu(data1, data2)
 
-    with open(out + 'mann_whitney_utest_result.txt', 'w') as f:
+    with open(out + '/mann_whitney_utest_' + statistic + '_result.txt', 'w') as f:
 
         f.write('U-statistic: ' + str(U1) + '\n')
-        f.write('p-value: ' + str(p), + '\n')
+        f.write('p-value: ' + str(p) + '\n')
 
 
-def plot_boxplot(data: 'np.ndarray[np.float64]', statistic: str, out: str):
+def plot_boxplot(data: list, statistic: str, out: str):
 
     """
     This function plots a boxplot.
@@ -828,12 +830,14 @@ def plot_boxplot(data: 'np.ndarray[np.float64]', statistic: str, out: str):
     mpl.rcParams['font.family'] = 'sans-serif'
     mpl.rcParams['font.size'] = 11
 
-    medianprops = dict(linestyle='-', linewidth=2.5, color='midnightblue')
-    boxprops = dict(linestyle='-', linewidth=3.5, coloc='black')
+    medianprops = dict(linestyle='-', linewidth=1.5, color='midnightblue')
+    boxprops = dict(linestyle='-', linewidth=1.5, color='black')
+    whiskerprops = dict(linestyle='-', linewidth=1.5, color='black')
 
     fig, ax = plt.subplots(figsize=(8, 8), dpi=500)
 
-    ax.boxplot(data, medianprops=medianprops, boxprops=boxprops, showfliers=False)
+    ax.boxplot(data, medianprops=medianprops, boxprops=boxprops, whiskerprops=whiskerprops,
+               showfliers=False)
 
     ratio = 1.0
 
@@ -843,8 +847,6 @@ def plot_boxplot(data: 'np.ndarray[np.float64]', statistic: str, out: str):
 
     ax.tick_params(axis='y', which='major', length=6, direction='in')
     ax.tick_params(axis='y', which='minor', length=3, direction='in')
-
-    ax.set_xticklabels(['Non-colocalised', 'Colocalised'], labelpad=4, fontsize=20)
 
     ax.yaxis.set_minor_locator(AutoMinorLocator(10))
 
@@ -860,9 +862,12 @@ def plot_boxplot(data: 'np.ndarray[np.float64]', statistic: str, out: str):
     ax.spines['right'].set_linewidth(1.0)
     ax.spines['left'].set_linewidth(1.0)
 
-    ax.set_ylabel(statistic, labelpad=12, fontsize=20)
+    ax.set_xticks([i + 1 for i in range(len(data))],
+                  labels=['Non-colocalised', 'Colocalised'])
 
-    plt.savefig(out + '/' + statistic + '.png')
+    ax.set_ylabel(statistic, labelpad=8, fontsize=20)
+
+    plt.savefig(out + '/' + statistic + '_boxplot.png')
 
 def compare_clust_size(data: 'np.ndarray[np.float64]', coloc_data: 'np.ndarray[np.float64]', out: str):
 
@@ -884,7 +889,7 @@ def compare_clust_size(data: 'np.ndarray[np.float64]', coloc_data: 'np.ndarray[n
 
     plot_boxplot(radii_data, statistic='Radius (nm)', out=out)
 
-    mann_whitney_utest(no_loc_radii, loc_radii, out=out)
+    mann_whitney_utest(no_loc_radii, loc_radii, statistic='Radius (nm)', out=out)
 
 def compare_clust_circularity(data: 'np.ndarray[np.float64]', coloc_data: 'np.ndarray[np.float64]', out: str):
 
@@ -906,7 +911,7 @@ def compare_clust_circularity(data: 'np.ndarray[np.float64]', coloc_data: 'np.nd
 
     plot_boxplot(radii_data, statistic='Circularity', out=out)
 
-    mann_whitney_utest(no_loc_circ, loc_circ, out=out)
+    mann_whitney_utest(no_loc_circ, loc_circ, statistic='Circularity', out=out)
 
 ## Cluster visualisation
 
@@ -1150,7 +1155,7 @@ def add_channel(locs: 'np.ndarray[np.float64]', channel: int) -> 'np.ndarray[np.
 
     return np.hstack((locs, channel_col)).reshape(locs.shape[0], 10)
 
-@jit(nopython=True, nogil=True, cache=False)
+@jit(nopython=True, nogil=True, cache=False, parallel=True)
 def calc_counts_with_radius(locs: 'np.ndarray[np.float64]', x0: float, y0: float, radii: list) -> 'np.ndarray[np.int64]':
 
     """
@@ -1201,7 +1206,7 @@ def calc_loc_distribution(counts: 'np.ndarray[np.int64]', radii: list) -> 'np.nd
 
     return cbc
 
-@jit(nopython=True, nogil=True, cache=False)
+@jit(nopython=True, nogil=True, cache=False, parallel=True)
 def calc_all_distributions(channel1_locs: 'np.ndarray[np.float64]', channel2_locs: 'np.ndarray[np.float64]', radii: list) -> 'np.ndarray[np.float64]':
 
     """
@@ -1434,6 +1439,8 @@ def two_color_reg_accuracy():
 
 def two_color_analysis_all():
 
+    start = time.perf_counter()
+
     print('Enter path to beads for green channel.')
     green_bead_ch_path = user_input()
 
@@ -1493,6 +1500,9 @@ def two_color_analysis_all():
                                     add_coloc_values(locs=red, coloc_values=colocs_red))
 
     save_locs_colocs(all_locs, channel=3, out=out)
+
+    end = time.perf_counter()
+    print("Elapsed (with compilation) = {}s".format((end - start)))
 
 def cluster_classification():
 
@@ -1559,7 +1569,9 @@ def cluster_analysis_coloc():
 
     no_coloc, coloc = separate_coloc_data(dbscan_data=dbscan_filt)
 
-    no_coloc_analysed, coloc_analysed = analyse_clusters(dbscan_data=no_coloc), analyse_clusters(dbscan_data=coloc)
+    no_coloc_filt, coloc_filt = denoise_data(no_coloc, min_n=4), denoise_data(coloc, min_n=4)
+
+    no_coloc_analysed, coloc_analysed = analyse_clusters(dbscan_data=no_coloc_filt), analyse_clusters(dbscan_data=coloc_filt)
 
     no_coloc_analysed_filt, coloc_analysed_filt = filter_clusters(cluster_data=no_coloc_analysed), filter_clusters(coloc_analysed)
 
