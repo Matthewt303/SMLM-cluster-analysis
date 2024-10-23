@@ -1090,19 +1090,6 @@ def register_channel(channel: 'np.ndarray[np.float64]', matrix: 'np.ndarray[np.f
 
     return corrected_channel.reshape(channel.shape[0], 2)
 
-def measure_accuracy(bead1_loc_reg: 'np.ndarray[np.float32]', bead2_loc: 'np.ndarray[np.float32]') -> 'np.ndarray[np.float32]':
-
-    distances = np.zeros((bead1_loc_reg.shape[0], 1))
-
-    for i in range(0, bead1_loc_reg.shape[0]):
-
-        x0, y0 = bead1_loc_reg[i, 0], bead1_loc_reg[i, 1]
-
-        distances[i, 0] = np.min(np.sqrt((bead2_loc[:, 0] - x0)**2 + 
-                                  (bead2_loc[:, 1] - y0)**2))
-
-    return distances
-
 def compare_channels(channel1, channel2):
 
     """
@@ -1486,9 +1473,11 @@ def two_color_reg_accuracy():
 
     green_xy_reg = register_channel(channel=green_bead_xy, matrix=matrix)
 
-    nearest_neighbors = calculate_nneighbor_dist(bead1_loc_reg=green_xy_reg, bead2_loc=red_bead_xy, radii=[1, 1])
+    nearest_neighbors = calculate_nneighbor_dist(ch1_locs=green_xy_reg, ch2_locs=red_bead_xy, radii=[1, 1])
 
     plot_histogram(data=nearest_neighbors, title='reg_accuracy', out=out)
+
+    print(np.mean(nearest_neighbors))
 
 def two_color_analysis_all():
 
