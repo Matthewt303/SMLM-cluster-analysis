@@ -1242,7 +1242,11 @@ def calc_loc_distribution(counts: 'np.ndarray[np.int64]', radii: list) -> 'np.nd
 
     max_r = max(radii)
 
-    cbc = counts / np.sum(counts) * (max_r ** 2 / np.array(radii) ** 2)
+    radii = radii.insert(0, 0)
+
+    areas = [np.pi * ((radii[i+1])**2 - (radii[i])**2) for i in range(0, len(radii) - 1)]
+
+    cbc = counts / np.sum(counts) * (max_r ** 2 / np.array(areas) ** 2)
 
     return cbc
 
@@ -1477,7 +1481,7 @@ def two_color_reg_accuracy():
 
     plot_histogram(data=nearest_neighbors, title='reg_accuracy', out=out)
 
-    print(np.mean(nearest_neighbors))
+    print(np.median(nearest_neighbors))
 
 def two_color_analysis_all():
 
