@@ -1227,8 +1227,25 @@ def calc_counts_with_radius(locs: 'np.ndarray[np.float64]', x0: float, y0: float
     
     return loc_counts_with_r
 
+def convert_radii_to_areas(radii: list) -> list:
+
+    """
+    This function converts the list of radii to a list of the differences
+    between consecutive radii squared.
+
+    In: radii---list of radii over which cbc will be calculated
+
+    Out: areas---the differences between radii squared
+    """
+    
+    radii = radii.insert(0, 0)
+
+    areas = [(radii[i+1])**2 - (radii[i])**2 for i in range(0, len(radii) - 1)]
+
+    return areas
+
 @jit(nopython=True, nogil=True, cache=False)
-def calc_loc_distribution(counts: 'np.ndarray[np.int64]', radii: list) -> 'np.ndarray[np.float64]':
+def calc_loc_distribution(counts: 'np.ndarray[np.int64]', radii: list, areas: list) -> 'np.ndarray[np.float64]':
 
     """
     Calculates distribution of number of localisations with increasing radii
@@ -1242,16 +1259,12 @@ def calc_loc_distribution(counts: 'np.ndarray[np.int64]', radii: list) -> 'np.nd
 
     max_r = max(radii)
 
-    radii = radii.insert(0, 0)
-
-    areas = [np.pi * ((radii[i+1])**2 - (radii[i])**2) for i in range(0, len(radii) - 1)]
-
     cbc = counts / np.sum(counts) * (max_r ** 2 / np.array(areas) ** 2)
 
     return cbc
 
 @jit(nopython=True, nogil=True, cache=False, parallel=True)
-def calc_all_distributions(channel1_locs: 'np.ndarray[np.float64]', channel2_locs: 'np.ndarray[np.float64]', radii: list) -> 'np.ndarray[np.float64]':
+def calc_all_distributions(channel1_locs: 'np.ndarray[np.float64]', channel2_locs: 'np.ndarray[np.float64]', radii: list, areas: list) -> 'np.ndarray[np.float64]':
 
     """
     Combines the previous two functions to calculate distributions along
@@ -1260,14 +1273,16 @@ def calc_all_distributions(channel1_locs: 'np.ndarray[np.float64]', channel2_loc
     In: channel1_locs---localisation table for a particular channel (np array)
     channel2_locs---localisation table for second channel (np array)
     radii---incrementally increasing radii (list of floats)
+    area---incrementally increasing areas (list of floats)
+
 
     Out: dist_ch1---distribution of cbc values for channel 1 relative to channel 2
     dist_ch2---distribution of cbc values for channel 2 relative to channel 1
     """
 
-    dist_ch1 = np.zeros((channel1_locs.shape[0], len(radii)))
+    dist_ch1 = np.zeros((channel1_locs.shape[0], len(areas)))
 
-    dist_ch2 = np.zeros((channel1_locs.shape[0], len(radii)))
+    dist_ch2 = np.zeros((channel1_locs.shape[0], len(areas)))
 
     # Loop through all localisations
 
@@ -1280,14 +1295,14 @@ def calc_all_distributions(channel1_locs: 'np.ndarray[np.float64]', channel2_loc
             channel1_locs, x0, y0, radii
         )
 
-        dist_ch1 = calc_loc_distribution(ch1_counts, radii)
+        dist_ch1 = calc_loc_distribution(ch1_counts, radii, areas)
 
         # Channel 2
         ch2_counts = calc_counts_with_radius(
             channel2_locs, x0, y0, radii
         )
 
-        dist_ch2 = calc_loc_distribution(ch2_counts, radii)
+        dist_ch2 = calc_loc_distribution(ch2_counts, radii, areas)
     
     return dist_ch1, dist_ch2
 
@@ -1520,11 +1535,11 @@ def two_color_analysis_all():
 
     green_xy, red_xy = extract_xy(green), extract_xy(red)
     
-    radii = generate_radii(bounding_radius=200, increment=10)
+    radii = generate_radii(bounding_radius=125, increment=25)
 
-    gg_dist, gr_dist = calc_all_distributions(green_xy,
-                                              red_xy,
-                                              radii)
+    areas = convert_radii_to_areas(radii)
+
+    gg_dist, gr_dist = calc_all_distributions(green_xy, red_xy, radii, areas)
     
     green_spearman = calc_spearman_cor_coeff(gg_dist, gr_dist)
 
@@ -1533,7 +1548,7 @@ def two_color_analysis_all():
     save_locs_colocs(add_coloc_values(locs=green, coloc_values=colocs),
                        channel=1, out=out)
     
-    rr_dist, rg_dist = calc_all_distributions(red_xy, green_xy, radii)
+    rr_dist, rg_dist = calc_all_distributions(red_xy, green_xy, radii, areas)
     
     red_spearman = calc_spearman_cor_coeff(rr_dist, rg_dist)
 
