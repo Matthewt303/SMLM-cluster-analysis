@@ -1238,7 +1238,9 @@ def convert_radii_to_areas(radii: list) -> list:
     Out: areas---the differences between radii squared
     """
     
-    radii = radii.insert(0, 0)
+    radii = radii.copy()
+
+    radii.insert(0, 0)
 
     areas = [(radii[i+1])**2 - (radii[i])**2 for i in range(0, len(radii) - 1)]
 
