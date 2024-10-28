@@ -443,11 +443,11 @@ def separate_coloc_data(dbscan_data: 'np.ndarray[np.float64]', threshold: float=
     coloc---localisations that were colocalised (np array)
     """
 
-    no_coloc = dbscan_data[(dbscan_data[:, -3] < threshold)]
+    no_coloc = dbscan_data[(dbscan_data[:, 10] < threshold)]
 
-    coloc = dbscan_data[(dbscan_data[:, -3] > threshold)]
+    coloc = dbscan_data[(dbscan_data[:, 10] > threshold)]
 
-    return no_coloc.reshape(-1, 13), coloc.reshape(-1, 13)
+    return no_coloc, coloc
 
 def calculate_intensity(points: 'np.ndarray[np.float64]') -> int:
 
@@ -1664,7 +1664,25 @@ def cluster_analysis_coloc():
     
     compare_clust_density(data=no_coloc_analysed_filt, coloc_data=coloc_analysed_filt,
                           out=outpath)
-    
+
+def cluster_class_coloc_vs_no_coloc():
+
+    print('Enter file path to localisation data: ')
+    path = user_input()
+
+    print('Enter folder where you want things stored: ')
+    out = user_input()
+
+    data = load_locs(path, channels=2)
+
+    nocoloc, coloc = separate_coloc_data(data)
+
+    clusters_nocoloc, clusters_coloc = hdbscan(nocoloc, min_n=4), hdbscan(coloc, min_n=4)
+
+    save_dbscan_results(clusters_nocoloc, n_channels=2, outpath=out)
+
+    save_dbscan_results(clusters_coloc, n_channels=2, outpath=out, filt=1)
+
 
 def main():
 
