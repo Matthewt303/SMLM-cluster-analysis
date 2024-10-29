@@ -1446,6 +1446,105 @@ def combine_channel_locs(ch1_locs: 'np.ndarray[np.float64]', ch2_locs: 'np.ndarr
 
     return np.vstack((ch1_locs, ch2_locs))
 
+## Time comparisons
+
+def add_paths(timepoints: int) -> list:
+
+    """
+    This function collates user-entered paths to cluster analysis files and returns the
+    paths is a list.
+
+    In: timepoints---the number of timepoints in the experimental data (int).
+
+    Out: file_paths---a list containing all the paths that point to cluster analysis files.
+    """
+
+    i = 0
+
+    file_paths = []
+
+    while i < timepoints:
+
+        print('Enter file ' + str(i))
+        path = user_input()
+
+        file_paths.append(path)
+
+        i += 1
+    
+    return file_paths
+
+def load_cluster_data(file_paths: list) -> list:
+
+    """
+    This function loads cluster analysis data from a list of file paths.
+
+    In: file_paths---a list containing all the paths that point to cluster analysis files.
+
+    Out: cluster_data---a list of arrays where each array corresponds to the cluster data from
+    one time point.
+    """
+
+    cluster_data = []
+
+    for path in file_paths:
+
+        data = np.genfromtxt(path, dtype=float, delimiter=',', skip_header=1)
+
+        cluster_data.append(data.reshape(-1, 8))
+    
+    return cluster_data
+
+def extract_radii(cluster_data: list) -> list:
+
+    """
+    This function extracts the radius column from every item in the the list,
+    i.e. from every time point.
+
+    In: cluster_data---a list where each array corresponds to the cluster data from
+    one time point.
+
+    Out: radii---a list of arrays where each array corresponds to the cluster radii for
+    one time point. 
+    """
+
+    radii = []
+    
+    for data in cluster_data:
+
+        radii.append(data[:, 3])
+    
+    return radii
+
+def extract_density(cluster_data: list) -> list:
+
+    """
+    This function extracts the density column from every item in the the list,
+    i.e. from every time point.
+
+    In: cluster_data---a list where each array corresponds to the cluster data from
+    one time point.
+
+    Out: densities---a list of arrays where each array corresponds to the cluster densities for
+    one time point. 
+    """
+
+    densities = []
+    
+    for data in cluster_data:
+
+        densities.append(data[:, 5])
+    
+    return densities
+
+def krusal_walis(statistic: list, outpath: str):
+
+    pass
+
+def compare_radii_time_series(radii_data: list, outpath: str):
+
+    pass
+
 ## Main functions
 
 def test_ripley_clustering():
