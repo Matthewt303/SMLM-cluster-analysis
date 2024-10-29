@@ -1450,6 +1450,10 @@ def combine_channel_locs(ch1_locs: 'np.ndarray[np.float64]', ch2_locs: 'np.ndarr
 
 def test_ripley_clustering():
 
+    """
+    Contains functions for Ripley K-function cluster classification.
+    """
+
     print('Enter path to localisation file')
     path = user_input()
 
@@ -1477,6 +1481,11 @@ def test_ripley_clustering():
 
 def two_color_reg_accuracy():
 
+    """
+    Checks the accuracy of channel registration using two localisation
+    tables from beads.
+    """
+
     print('Enter path to beads for green channel.')
     green_bead_ch_path = user_input()
 
@@ -1501,6 +1510,15 @@ def two_color_reg_accuracy():
     print(np.median(nearest_neighbors))
 
 def two_color_analysis_all():
+
+    """
+    All functions for two-colour analysis. Loads bead localisations and
+    protein localisations, and performs channel registration. Saves corrected
+    localisations then calculates cbc for all localisations. This is done for both
+    channels, and the cbc values are appended to the localisation table which
+    is saved as a .csv. Both channels are also combined into one localisation table
+    and saved.
+    """
 
     start = time.perf_counter()
 
@@ -1569,6 +1587,11 @@ def two_color_analysis_all():
 
 def cluster_classification():
 
+    """
+    Carries out HDBSCAN, filters clusters, and appends the cluster
+    label to the localisation table.
+    """
+
     print('Enter path to localisation file')
     path = user_input()
 
@@ -1587,6 +1610,11 @@ def cluster_classification():
 
 def cluster_analysis_all():
 
+    """
+    Calculates cluster statistics for all localisations. Saves histograms
+    of each statistic, as well as medians and standard deviations.
+    """
+
     print('Enter path to DBSCAN data.')
     path = user_input()
 
@@ -1596,6 +1624,8 @@ def cluster_analysis_all():
     print('Cluster analysis has started.')
     
     dbscan_filt = load_dbscan_data(path=path)
+
+    #dbscan_filt = denoise_data(dbscan_data=dbscan_filt, min_n=4)
 
     clust_analysed = analyse_clusters(dbscan_filt)
 
@@ -1614,6 +1644,13 @@ def cluster_analysis_all():
     print('Analysis complete')
 
 def cluster_analysis_coloc():
+
+    """
+    Takes data from HDBSCAN, separates it by degree of colocalisation
+    and carries out cluster analysis separately on each dataset. The function
+    also plots boxplots to compare statistics between colocalised and non-colocalised.
+    The result from a Mann-Whitney U test is also saved.
+    """
 
     print('Enter path to DBSCAN data.')
     path = user_input()
@@ -1667,11 +1704,17 @@ def cluster_analysis_coloc():
 
 def cluster_class_coloc_vs_no_coloc():
 
+    """
+    This function also calculates statistics and plots them following separation
+    into colocalised vs non-colocalised. However, the separation is carried out
+    prior to HDBSCAN.
+    """
+
     print('Enter file path to localisation data: ')
     path = user_input()
 
     print('Enter folder where you want things stored: ')
-    out = user_input()
+    outpath = user_input()
 
     data = load_locs(path, channels=2)
 
@@ -1679,14 +1722,43 @@ def cluster_class_coloc_vs_no_coloc():
 
     clusters_nocoloc, clusters_coloc = hdbscan(nocoloc, min_n=4), hdbscan(coloc, min_n=4)
 
-    save_dbscan_results(clusters_nocoloc, n_channels=2, outpath=out)
+    clusters_nocoloc_filt, clusters_coloc_filt = denoise_data(clusters_nocoloc, min_n=4), denoise_data(clusters_coloc, min_n=4)
+    
+    save_dbscan_results(clusters_nocoloc_filt, n_channels=2, outpath=outpath)
 
-    save_dbscan_results(clusters_coloc, n_channels=2, outpath=out, filt=1)
+    save_dbscan_results(clusters_coloc_filt, n_channels=2, outpath=outpath, filt=1)
 
+    no_coloc_analysed, coloc_analysed = analyse_clusters(dbscan_data=clusters_nocoloc_filt), analyse_clusters(dbscan_data=clusters_coloc_filt)
 
-def main():
+    no_coloc_analysed_filt, coloc_analysed_filt = filter_clusters(cluster_data=no_coloc_analysed), filter_clusters(coloc_analysed)
 
-    pass
+    no_coloc_df, coloc_df = convert_to_dataframe(filt_cluster_data=no_coloc_analysed_filt), convert_to_dataframe(coloc_analysed_filt)
+
+    save_cluster_analysis(filt_cluster_data=no_coloc_df, outpath=outpath, coloc=1)
+
+    save_cluster_analysis(filt_cluster_data=coloc_df, outpath=outpath, coloc=2)
+
+    plot_cluster_statistics(filt_cluster_data=no_coloc_df, outpath=outpath, coloc=1)
+
+    plot_cluster_statistics(filt_cluster_data=coloc_df, outpath=outpath, coloc=2)
+
+    no_coloc_clust_stats = calculate_statistics(filt_cluster_data=no_coloc_df)
+
+    coloc_clust_stats = calculate_statistics(filt_cluster_data=coloc_df)
+
+    save_statistics(no_coloc_clust_stats, out=outpath, coloc=1)
+
+    save_statistics(coloc_clust_stats, out=outpath, coloc=2)
+
+    compare_clust_size(data=no_coloc_analysed_filt, coloc_data=coloc_analysed_filt,
+                       out=outpath)
+    
+    compare_clust_circularity(data=no_coloc_analysed_filt, coloc_data=coloc_analysed_filt,
+                              out=outpath)
+    
+    compare_clust_density(data=no_coloc_analysed_filt, coloc_data=coloc_analysed_filt,
+                          out=outpath)
+
 
 if __name__ == '__main__':
 
