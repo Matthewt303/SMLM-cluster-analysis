@@ -13,6 +13,7 @@ from scipy.spatial import ConvexHull
 from sklearn.metrics import pairwise_distances
 import cv2 as cv
 import time
+import itertools
 
 def user_input() -> str:
 
@@ -1551,9 +1552,22 @@ def kruskal_walis(statistic_data: list, statistic: str, outpath: str):
         f.write('The test statistic is: ' + str(H) + '\n')
         f.write('The p-value is: ' + str(p) + '\n')
 
-def compare_mannwhit_pairs(statistic_data: list, statistic: str, outpath: str):
+def compare_mannwhit_pairs(statistic_data: list, outpath: str):
 
-    pass 
+    """
+    This function carries out pairwise Mann-Whitney tests between all time points. 
+
+    In: statistic_data---a list of numpy arrays of a particular statistic at different time points.
+    Outpath---where the results will be saved (str).
+    """
+
+    all_pairs = list(itertools.combinations(statistic_data, 2))
+
+    for i in range(0, len(all_pairs)):
+
+        time_series_pair = all_pairs[0]
+
+        mann_whitney_utest(time_series_pair[i][0], time_series_pair[i][1], statistic=str(i + 1), out=outpath)
 
 def compare_radii_time_series(radii_data: list, outpath: str):
 
