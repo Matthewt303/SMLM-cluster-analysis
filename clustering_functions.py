@@ -1508,11 +1508,7 @@ def extract_radii(cluster_data: list) -> list:
     one time point. 
     """
 
-    radii = []
-    
-    for data in cluster_data:
-
-        radii.append(data[:, 3])
+    radii = [data for data in cluster_data]
     
     return radii
 
@@ -1529,17 +1525,35 @@ def extract_density(cluster_data: list) -> list:
     one time point. 
     """
 
-    densities = []
-    
-    for data in cluster_data:
-
-        densities.append(data[:, 5])
+    densities = [data[:, 5] for data in cluster_data]
     
     return densities
 
-def krusal_walis(statistic: list, outpath: str):
+def kruskal_walis(statistic_data: list, statistic: str, outpath: str):
 
-    pass
+    """
+    This function carries out the Kruskal-Wallis test for a particular cluster statistic
+    across different time points.
+
+    In: statistic_data---a list of a particular cluster statistic at different time points.
+    statistic---the cluster statistic on which the test will be carried out (str)
+    outpath---the output folder where results will be saved (str)
+
+    Out:
+    """
+
+    t1, t2, t3 = statistic_data[:]
+
+    H, p = stats.kruskal(t1, t2, t3)
+
+    with open(outpath + '/kruskal_wallis_result_' + statistic + '.txt', 'w') as f:
+
+        f.write('The test statistic is: ' + str(H) + '\n')
+        f.write('The p-value is: ' + str(p) + '\n')
+
+def compare_mannwhit_pairs(statistic_data: list, statistic: str, outpath: str):
+
+    pass 
 
 def compare_radii_time_series(radii_data: list, outpath: str):
 
