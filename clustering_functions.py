@@ -812,7 +812,7 @@ def save_statistics(cluster_statistics: dict, out: str, coloc: int=0):
                 print(stat + ' ' + str(cluster_statistics[stat]) + '\n',
                     file=f)
 
-def mann_whitney_utest(data1: 'np.ndarray[np.float64]', data2: 'np.ndarray[np.float64]', statistic: str, out: str):
+def mann_whitney_utest(data1: 'np.ndarray[np.float64]', data2: 'np.ndarray[np.float64]', statistic: str, out: str) -> float:
 
     """
     This function carries out the Mann-Whitney U test, also known as the Wilcoxon summed rank test,
@@ -825,6 +825,7 @@ def mann_whitney_utest(data1: 'np.ndarray[np.float64]', data2: 'np.ndarray[np.fl
 
     Out:
     .txt file with the U-statistic and significance value (float)
+    p---the p-value from the significance test (float)
     """
 
     U1, p = stats.mannwhitneyu(data1, data2)
@@ -834,6 +835,7 @@ def mann_whitney_utest(data1: 'np.ndarray[np.float64]', data2: 'np.ndarray[np.fl
         f.write('U-statistic: ' + str(U1) + '\n')
         f.write('p-value: ' + str(p) + '\n')
 
+    return p
 
 def plot_boxplot(data: list, statistic: str, out: str):
 
@@ -1542,36 +1544,50 @@ def kruskal_walis(statistic_data: list, statistic: str, outpath: str):
 
     Out:
     """
-
-    t1, t2, t3 = statistic_data[:]
-
-    H, p = stats.kruskal(t1, t2, t3)
+    H, p = stats.kruskal(*statistic_data)
 
     with open(outpath + '/kruskal_wallis_result_' + statistic + '.txt', 'w') as f:
 
         f.write('The test statistic is: ' + str(H) + '\n')
         f.write('The p-value is: ' + str(p) + '\n')
 
-def compare_mannwhit_pairs(statistic_data: list, outpath: str):
+def compare_mannwhit_pairs(statistic_data: list, statistic: str, outpath: str):
 
     """
     This function carries out pairwise Mann-Whitney tests between all time points. 
 
     In: statistic_data---a list of numpy arrays of a particular statistic at different time points.
+    Statistic---the cluster statistic on which the test will be carried out (str)
     Outpath---where the results will be saved (str).
     """
 
     all_pairs = list(itertools.combinations(statistic_data, 2))
 
+    p_values = np.zeros(len(statistic_data), 1)
+
     for i in range(0, len(all_pairs)):
 
-        time_series_pair = all_pairs[0]
+        time_series_pair = all_pairs[i]
 
-        mann_whitney_utest(time_series_pair[i][0], time_series_pair[i][1], statistic=str(i + 1), out=outpath)
+        p = mann_whitney_utest(time_series_pair[0], time_series_pair[1],
+                           statistic=statistic + ' ' + str(i + 1), out=outpath)
+        
+        p_values[i] = p
+    
+    return p_values
 
 def compare_radii_time_series(radii_data: list, outpath: str):
 
-    pass
+    """
+    This function carries out the Kruskal-Walis test, compares all pairs of datasets using the Mann-Whitney test,
+    and plots a boxplot of varying radii.
+    """
+
+    kruskal_walis(statistic_data=radii_data, statistic='Radius (nm)', outpath=outpath)
+
+    compare_mannwhit_pairs(statistic=radii_data, statistic='Radius (nm)', outpath=outpath)
+
+    plot_boxplot(data=radii_data, statistic='Radius (nm)', out=outpath)
 
 ## Main functions
 
