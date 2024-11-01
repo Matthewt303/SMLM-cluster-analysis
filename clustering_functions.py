@@ -1532,7 +1532,7 @@ def extract_density(cluster_data: list) -> list:
     
     return densities
 
-def kruskal_walis(statistic_data: list, statistic: str, outpath: str):
+def kruskal_wallis(statistic_data: list, statistic: str, outpath: str):
 
     """
     This function carries out the Kruskal-Wallis test for a particular cluster statistic
@@ -1542,7 +1542,7 @@ def kruskal_walis(statistic_data: list, statistic: str, outpath: str):
     statistic---the cluster statistic on which the test will be carried out (str)
     outpath---the output folder where results will be saved (str)
 
-    Out:
+    Out: a .txt file with the H-value and p-value from the Kruskal-Wallis test.
     """
     H, p = stats.kruskal(*statistic_data)
 
@@ -1559,6 +1559,9 @@ def compare_mannwhit_pairs(statistic_data: list, statistic: str, outpath: str):
     In: statistic_data---a list of numpy arrays of a particular statistic at different time points.
     Statistic---the cluster statistic on which the test will be carried out (str)
     Outpath---where the results will be saved (str).
+
+    Out: p_values---an array containing the p-values from the Mann-Whitney tests of all
+    pairs of time points.
     """
 
     all_pairs = list(itertools.combinations(statistic_data, 2))
@@ -1576,6 +1579,29 @@ def compare_mannwhit_pairs(statistic_data: list, statistic: str, outpath: str):
     
     return p_values
 
+def correct_pvalues(p_values: 'np.ndarray[np.float64]', statistic: str, outpath: str) -> 'np.ndarray[np.float64]':
+
+    """
+    This function corrects for multiple testing using the Benjamini-Hochberg method.
+
+    In: p_values---a numpy array with the p-values resulting from Mann-Whitney tests of
+    all pairs of time points.
+    statistic---the cluster statistic on which the test will be carried out (str)
+    outpath---where the results will be saved (str)
+
+    Out: corrected_pvalues---p-values adjusted for multiple testing (np array)
+    """
+    
+    corrected_pvalues = stats.false_discovery_correct(p_values)
+
+    with open(outpath + '/cor_pvalues_' + statistic + '.txt', 'w') as f:
+
+        for p in corrected_pvalues:
+
+            f.write(str(p) + '\n')
+    
+    return correct_pvalues
+
 def compare_radii_time_series(radii_data: list, outpath: str):
 
     """
@@ -1583,9 +1609,11 @@ def compare_radii_time_series(radii_data: list, outpath: str):
     and plots a boxplot of varying radii.
     """
 
-    kruskal_walis(statistic_data=radii_data, statistic='Radius (nm)', outpath=outpath)
+    kruskal_wallis(statistic_data=radii_data, statistic='Radius (nm)', outpath=outpath)
 
-    compare_mannwhit_pairs(statistic=radii_data, statistic='Radius (nm)', outpath=outpath)
+    pvals = compare_mannwhit_pairs(statistic=radii_data, statistic='Radius (nm)', outpath=outpath)
+
+    correct_pvalues(pvals, statistic='Radius (nm)', outpath=outpath)
 
     plot_boxplot(data=radii_data, statistic='Radius (nm)', out=outpath)
 
