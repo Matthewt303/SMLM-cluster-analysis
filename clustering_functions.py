@@ -1145,6 +1145,24 @@ def compare_channels(channel1, channel2):
 
     plt.show()
 
+def filter_bead_locs(ch1_locs, ch2_locs, nneighbors):
+
+    all_data = np.hstack((ch1_locs, ch2_locs, nneighbors)).reshape(-1, 5)
+
+    filt_data = all_data[(all_data[:, 4] < 50)]
+
+    ch1_filt, ch2_filt = filt_data[:, 0:2], filt_data[:, 2:4]
+
+    print(ch1_filt.shape)
+
+    print(ch2_filt.shape)
+
+    print(ch1_filt.dtype)
+
+    print(ch2_filt.dtype)
+    
+    return ch1_filt.astype(np.float32), ch2_filt.astype(np.float32)
+
 def save_corrected_channels(cor_locs: 'np.ndarray[np.float64]', locs:'np.ndarray[np.float64]', out: str):
 
     """
@@ -1611,7 +1629,7 @@ def compare_radii_time_series(radii_data: list, outpath: str):
 
     kruskal_wallis(statistic_data=radii_data, statistic='Radius (nm)', outpath=outpath)
 
-    pvals = compare_mannwhit_pairs(statistic=radii_data, statistic='Radius (nm)', outpath=outpath)
+    pvals = compare_mannwhit_pairs(statistic_data=radii_data, statistic='Radius (nm)', outpath=outpath)
 
     correct_pvalues(pvals, statistic='Radius (nm)', outpath=outpath)
 
@@ -1676,9 +1694,25 @@ def two_color_reg_accuracy():
 
     nearest_neighbors = calculate_nneighbor_dist(ch1_locs=green_xy_reg, ch2_locs=red_bead_xy, radii=[1, 1])
 
-    plot_histogram(data=nearest_neighbors, title='reg_accuracy', out=out)
+    green_xy_filt, red_xy_filt = filter_bead_locs(ch1_locs=green_bead_xy, ch2_locs=red_bead_xy, nneighbors=nearest_neighbors)
+
+    matrix_2 = calculate_transformation_matrix(channel1=green_xy_filt, channel2=red_xy_filt)
+
+    green_xy_reg_2 = register_channel(channel=green_xy_filt, matrix=matrix_2)
+
+    compare_channels(green_xy_reg_2, red_bead_xy)
+
+    nearest_neighbors_2 = calculate_nneighbor_dist(ch1_locs=green_xy_reg_2, ch2_locs=red_bead_xy, radii=[1, 1])
+
+    plot_histogram(data=nearest_neighbors_2, title='reg_accuracy', out=out)
 
     print(np.median(nearest_neighbors))
+
+    print(np.median(nearest_neighbors_2))
+
+    print(matrix)
+
+    print(matrix_2)
 
 def two_color_analysis_all():
 
@@ -1718,7 +1752,15 @@ def two_color_analysis_all():
 
     matrix = calculate_transformation_matrix(channel1=green_bead_xy, channel2=red_bead_xy)
 
-    green_xy_reg = register_channel(channel=green_locs_xy, matrix=matrix)
+    green_bead_xy_reg = register_channel(channel=green_bead_xy, matrix=matrix)
+
+    nearest_neighbors = calculate_nneighbor_dist(ch1_locs=green_bead_xy_reg, ch2_locs=red_bead_xy, radii=[1, 1])
+
+    green_xy_filt, red_xy_filt = filter_bead_locs(ch1_locs=green_bead_xy, ch2_locs=red_bead_xy, nneighbors=nearest_neighbors)
+
+    matrix_2 = calculate_transformation_matrix(channel1=green_xy_filt, channel2=red_xy_filt)
+
+    green_xy_reg = register_channel(channel=green_locs_xy, matrix=matrix_2)
 
     green_locs_cor = save_corrected_channels(cor_locs=green_xy_reg, locs=green_locs, out=out)
 
@@ -1933,4 +1975,4 @@ def cluster_class_coloc_vs_no_coloc():
 
 if __name__ == '__main__':
 
-    pass
+    two_color_reg_accuracy()
