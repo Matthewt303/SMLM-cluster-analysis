@@ -83,7 +83,7 @@ def extract_xy(locs: 'np.ndarray[np.float64]') -> 'np.ndarray[np.float64]':
 
     return locs[:, 2:4].reshape(-1, 2)
 
-def generate_radii(bounding_radius: float, increment: float) -> list:
+def generate_radii(bounding_radius: float, increment: float) -> list[float]:
 
     """
     Generate a list of radii for cluster detection via Ripley functions.
@@ -101,7 +101,7 @@ def generate_radii(bounding_radius: float, increment: float) -> list:
 
     return radii[1:]
 
-def ripley_k_function(xy_data: 'np.ndarray[np.float64]', r: list, br: float) -> 'np.ndarray[np.float64]':
+def ripley_k_function(xy_data: 'np.ndarray[np.float64]', r: list[float], br: float) -> 'np.ndarray[np.float64]':
 
     """
     2D Ripley's K=function. Converts result to numpy array.
@@ -130,7 +130,7 @@ def ripley_l_function(k_values: 'np.ndarray[np.float64]') -> 'np.ndarray[np.floa
 
     return np.sqrt(k_values / np.pi)
 
-def ripley_h_function(l_values: 'np.ndarray[np.float64]', radii: list) -> 'np.ndarray[np.float64]':
+def ripley_h_function(l_values: 'np.ndarray[np.float64]', radii: list[float]) -> 'np.ndarray[np.float64]':
 
     """
     2D Ripley's H-function, normalized such that the expected value is 0.
@@ -143,7 +143,7 @@ def ripley_h_function(l_values: 'np.ndarray[np.float64]', radii: list) -> 'np.nd
 
     return l_values - np.array(radii).reshape(len(radii), 1)
 
-def plot_ripley_h(h_values: 'np.ndarray[np.float64]', radii: list, out: str):
+def plot_ripley_h(h_values: 'np.ndarray[np.float64]', radii: list[float], out: str):
 
     """
     Plots Ripley's H-function against radii.
@@ -158,17 +158,14 @@ def plot_ripley_h(h_values: 'np.ndarray[np.float64]', radii: list, out: str):
 
     plt.ioff()
 
-    # Set font type and size for axis values
     mpl.rcParams['font.family'] = 'sans-serif'
     mpl.rcParams['font.size'] = 10
 
     fig, ax = plt.subplots(figsize=(8, 8), dpi=500)
 
-    # Plot Ripley's H-function against radii
     ax.plot(radii, h_values, 'b', linewidth=5.0)
     ax.axhline(y=0, color='r')
 
-    # Set axis limits
     ax.set_xlim(left=0)
 
     ratio = 1.0
@@ -178,7 +175,6 @@ def plot_ripley_h(h_values: 'np.ndarray[np.float64]', radii: list, out: str):
     y_low, y_high = ax.get_ylim()
     ax.set_aspect(abs((x_right-x_left)/(y_low-y_high)) * ratio)
 
-    # Major and minor tick parameters
     ax.tick_params(axis='y', which='major', length=10, direction='in')
     ax.tick_params(axis='y', which='minor', length=5, direction='in')
     ax.tick_params(axis='x', which='major', length=10, direction='in')
@@ -187,7 +183,6 @@ def plot_ripley_h(h_values: 'np.ndarray[np.float64]', radii: list, out: str):
     ax.xaxis.set_minor_locator(AutoMinorLocator(10))
     ax.yaxis.set_minor_locator(AutoMinorLocator(10))
 
-    # Set colors of axes and box
     ax.xaxis.label.set_color('black')
     ax.yaxis.label.set_color('black')
 
@@ -206,7 +201,7 @@ def plot_ripley_h(h_values: 'np.ndarray[np.float64]', radii: list, out: str):
 
     plt.savefig(out + '/ripley_hfunction.png')
 
-def calculate_rmax(h_values: 'np.ndarray[np.float64]', radii: list) -> float:
+def calculate_rmax(h_values: 'np.ndarray[np.float64]', radii: list[float]) -> float:
 
     """
     Calculate the radius at which Ripley's H-function is at a maximum
@@ -219,7 +214,7 @@ def calculate_rmax(h_values: 'np.ndarray[np.float64]', radii: list) -> float:
 
     return radii[h_values.argmax()]
 
-def save_max_r(outpath: str, max_r: float):
+def save_max_r(outpath: str, max_r: float) -> None:
 
     """
     Save the value of the radius at which Ripley's H-function is at a maximum
@@ -245,17 +240,16 @@ def hdbscan(locs: 'np.ndarray[np.float64]', min_n: int) -> 'np.ndarray[np.float6
     # Instantiate and fit
     hdbscan = HDBSCAN(min_cluster_size=min_n).fit(locs[:, 2:4].reshape(-1, 2))
 
-    # DBSCAN labels
+    # Cluster labels
     labels = hdbscan.labels_
 
-    # Reassgine label for noise
+    # Reassgine label for noise to avoid zero division problems
     labels[(labels == 0)] = -1
 
     cluster_probabilities = hdbscan.probabilities_
 
     all_data = np.concatenate((locs, labels[:, np.newaxis], cluster_probabilities[:, np.newaxis]), axis=1).reshape(-1, 13)
 
-    # Combine localisation data, labels, and probabilities
     return all_data
 
 def denoise_data(dbscan_data: 'np.ndarray[np.float64]', min_n: int) -> 'np.ndarray[np.float64]':
@@ -1145,21 +1139,25 @@ def compare_channels(channel1, channel2):
 
     plt.show()
 
-def filter_bead_locs(ch1_locs, ch2_locs, nneighbors):
+def filter_bead_locs(ch1_locs: 'np.ndarray[np.float64]', ch2_locs: 'np.ndarray[np.float64]', nneighbors: 'np.ndarray[np.float64]') -> 'np.ndarray[np.float32]':
+
+    """
+    This function removes bead localisations following registration if the distance to its nearest neighbor
+    is less than 50 nm.
+
+    In: ch1_locs---xy localisations of one channel (np array)
+    ch2_locs---xy localisations of second channel (np array)
+    nneighbors---nearest neighbor for each localisation of channel 1 (np array)
+
+    Out: ch1_filt---xy localisations of channel one following filtering.
+    ch2_filt---xy localisations of channel two following filtering.
+    """
 
     all_data = np.hstack((ch1_locs, ch2_locs, nneighbors)).reshape(-1, 5)
 
     filt_data = all_data[(all_data[:, 4] < 50)]
 
     ch1_filt, ch2_filt = filt_data[:, 0:2], filt_data[:, 2:4]
-
-    print(ch1_filt.shape)
-
-    print(ch2_filt.shape)
-
-    print(ch1_filt.dtype)
-
-    print(ch2_filt.dtype)
     
     return ch1_filt.astype(np.float32), ch2_filt.astype(np.float32)
 
@@ -1217,7 +1215,7 @@ def add_channel(locs: 'np.ndarray[np.float64]', channel: int) -> 'np.ndarray[np.
     return np.hstack((locs, channel_col)).reshape(locs.shape[0], 10)
 
 @jit(nopython=True, nogil=True, cache=False, parallel=True)
-def calc_counts_with_radius(locs: 'np.ndarray[np.float64]', x0: float, y0: float, radii: list) -> 'np.ndarray[np.int64]':
+def calc_counts_with_radius(locs: 'np.ndarray[np.float64]', x0: float, y0: float, radii: list[float]) -> 'np.ndarray[np.int64]':
 
     """
     Calculate number of localisations from a list of increasing radii.
@@ -1248,7 +1246,7 @@ def calc_counts_with_radius(locs: 'np.ndarray[np.float64]', x0: float, y0: float
     
     return loc_counts_with_r
 
-def convert_radii_to_areas(radii: list) -> list:
+def convert_radii_to_areas(radii: list[float]) -> list[float]:
 
     """
     This function converts the list of radii to a list of the differences
@@ -1268,7 +1266,7 @@ def convert_radii_to_areas(radii: list) -> list:
     return areas
 
 @jit(nopython=True, nogil=True, cache=False)
-def calc_loc_distribution(counts: 'np.ndarray[np.int64]', radii: list, areas: list) -> 'np.ndarray[np.float64]':
+def calc_loc_distribution(counts: 'np.ndarray[np.int64]', radii: list[float], areas: list[float]) -> 'np.ndarray[np.float64]':
 
     """
     Calculates distribution of number of localisations with increasing radii
@@ -1287,7 +1285,7 @@ def calc_loc_distribution(counts: 'np.ndarray[np.int64]', radii: list, areas: li
     return cbc
 
 @jit(nopython=True, nogil=True, cache=False, parallel=True)
-def calc_all_distributions(channel1_locs: 'np.ndarray[np.float64]', channel2_locs: 'np.ndarray[np.float64]', radii: list, areas: list) -> 'np.ndarray[np.float64]':
+def calc_all_distributions(channel1_locs: 'np.ndarray[np.float64]', channel2_locs: 'np.ndarray[np.float64]', radii: list[float], areas: list[float]) -> 'np.ndarray[np.float64]':
 
     """
     Combines the previous two functions to calculate distributions along
@@ -1358,7 +1356,7 @@ def calc_spearman_cor_coeff(ch1_dist: 'np.ndarray[np.float64]', ch2_dist: 'np.nd
     return spearman_cor_coeffs.reshape(ch1_dist.shape[0], 1)
 
 @jit(nopython=True, nogil=True, cache=False, parallel=True)
-def calculate_nneighbor_dist(ch1_locs: 'np.ndarray[np.float64]', ch2_locs: 'np.ndarray[np.float64]', radii: list) -> 'np.ndarray[np.float64]':
+def calculate_nneighbor_dist(ch1_locs: 'np.ndarray[np.float64]', ch2_locs: 'np.ndarray[np.float64]', radii: list[float]) -> 'np.ndarray[np.float64]':
 
     """
     Calculate the nearest neighbours for a particular localisation
@@ -1387,7 +1385,7 @@ def calculate_nneighbor_dist(ch1_locs: 'np.ndarray[np.float64]', ch2_locs: 'np.n
     return distances / max(radii)
 
 @jit(nopython=True, nogil=True, cache=False)
-def calc_coloc_values(spearman: 'np.ndarray[np.float64]', ch1_locs: 'np.ndarray[np.float64]', ch2_locs: 'np.ndarray[np.float64]', radii: list) -> 'np.ndarray[np.float64]':
+def calc_coloc_values(spearman: 'np.ndarray[np.float64]', ch1_locs: 'np.ndarray[np.float64]', ch2_locs: 'np.ndarray[np.float64]', radii: list[float]) -> 'np.ndarray[np.float64]':
 
     """
     This function weights the spearman correlation coefficients
@@ -1469,7 +1467,7 @@ def combine_channel_locs(ch1_locs: 'np.ndarray[np.float64]', ch2_locs: 'np.ndarr
 
 ## Time comparisons
 
-def add_paths(timepoints: int) -> list:
+def add_paths(timepoints: int) -> list[str]:
 
     """
     This function collates user-entered paths to cluster analysis files and returns the
@@ -1495,7 +1493,7 @@ def add_paths(timepoints: int) -> list:
     
     return file_paths
 
-def load_cluster_data(file_paths: list) -> list:
+def load_cluster_data(file_paths: list[str]) -> list['np.array']:
 
     """
     This function loads cluster analysis data from a list of file paths.
@@ -1516,7 +1514,7 @@ def load_cluster_data(file_paths: list) -> list:
     
     return cluster_data
 
-def extract_radii(cluster_data: list) -> list:
+def extract_radii(cluster_data: list['np.array']) -> list['np.array']:
 
     """
     This function extracts the radius column from every item in the the list,
@@ -1529,11 +1527,11 @@ def extract_radii(cluster_data: list) -> list:
     one time point. 
     """
 
-    radii = [data for data in cluster_data]
+    radii = [data[:, 3] for data in cluster_data]
     
     return radii
 
-def extract_density(cluster_data: list) -> list:
+def extract_density(cluster_data: list['np.array']) -> list['np.array']:
 
     """
     This function extracts the density column from every item in the the list,
@@ -1550,7 +1548,7 @@ def extract_density(cluster_data: list) -> list:
     
     return densities
 
-def kruskal_wallis(statistic_data: list, statistic: str, outpath: str):
+def kruskal_wallis(statistic_data: list, statistic: str, outpath: str) -> None:
 
     """
     This function carries out the Kruskal-Wallis test for a particular cluster statistic
@@ -1569,7 +1567,7 @@ def kruskal_wallis(statistic_data: list, statistic: str, outpath: str):
         f.write('The test statistic is: ' + str(H) + '\n')
         f.write('The p-value is: ' + str(p) + '\n')
 
-def compare_mannwhit_pairs(statistic_data: list, statistic: str, outpath: str):
+def compare_mannwhit_pairs(statistic_data: list, statistic: str, outpath: str) -> None:
 
     """
     This function carries out pairwise Mann-Whitney tests between all time points. 
@@ -1620,7 +1618,7 @@ def correct_pvalues(p_values: 'np.ndarray[np.float64]', statistic: str, outpath:
     
     return correct_pvalues
 
-def compare_radii_time_series(radii_data: list, outpath: str):
+def compare_radii_time_series(radii_data: list['np.array'], outpath: str) -> None:
 
     """
     This function carries out the Kruskal-Walis test, compares all pairs of datasets using the Mann-Whitney test,
