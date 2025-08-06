@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 from matplotlib.ticker import AutoMinorLocator
 import numpy as np
+import pandas as pd
 
 def plot_ripley_h(h_values: 'np.ndarray[np.float64]', radii: list[float], out: str):
 
@@ -254,3 +255,55 @@ def plot_boxplot(data: list, statistic: str, out: str):
     ax.set_ylabel(statistic, labelpad=8, fontsize=20)
 
     plt.savefig(out + '/' + statistic + '_boxplot.png')
+
+def compare_channels(channel1, channel2):
+
+    """
+    This function plots the xy-localisations of channel 1 and channel 2
+    as a scatter plot and saves the plot in a specified folder.
+
+    In: channel1---xy localisations of one channel (np array)
+    channel2---xy localisations of second channel (np array)
+    out---output folder where plot will be saved (str)
+
+    Out: None but the plot should be saved as a .png file in the 
+    output folder.
+    """
+
+    mpl.rcParams['font.family'] = 'sans-serif'
+    mpl.rcParams['font.size'] = 10
+
+    fig, ax = plt.subplots(figsize=(6, 6), dpi=300)
+
+    ax.scatter(channel1[:, 0], channel1[:, 1], s=2,
+               facecolors='b')
+    ax.scatter(channel2[:, 0], channel2[:, 1], s=2,
+               facecolors='r')
+    
+    ratio = 1.0
+
+    x_left, x_right = ax.get_xlim()
+    y_low, y_high = ax.get_ylim()
+    ax.set_aspect(abs((x_right-x_left)/(y_low-y_high)) * ratio)
+
+    ax.tick_params(axis='y', which='major', length=5, direction='out')
+    ax.tick_params(axis='y', which='minor', length=2, direction='out')
+    ax.tick_params(axis='x', which='major', length=5, direction='out')
+    ax.tick_params(axis='x', which='minor', length=2, direction='out')
+
+    ax.xaxis.set_minor_locator(AutoMinorLocator(10))
+    ax.yaxis.set_minor_locator(AutoMinorLocator(10))
+
+    ax.xaxis.label.set_color('black')
+    ax.yaxis.label.set_color('black')
+
+    ax.spines['bottom'].set_color('black')
+    ax.spines['top'].set_color('black')
+    ax.spines['right'].set_color('black')
+    ax.spines['left'].set_color('black')
+    ax.spines['bottom'].set_linewidth(1.0)
+    ax.spines['top'].set_linewidth(1.0)
+    ax.spines['right'].set_linewidth(1.0)
+    ax.spines['left'].set_linewidth(1.0)
+
+    plt.show()

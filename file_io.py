@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import os
 
 def user_input() -> str:
 
@@ -137,12 +138,13 @@ def save_dbscan_results(data: 'np.ndarray[np.float64]', n_channels: int, outpath
 
         dbscan_results_df.to_csv(outpath + '/filt_dbscan_output.csv', index=False)
 
-def save_cluster_analysis(filt_cluster_data: pd.DataFrame, outpath: str, coloc: int=0):
+def save_cluster_analysis(filt_cluster_data: 'pd.DataFrame', outpath: str,
+                          repeat_no: int, condition: str):
 
     """
     Save results of cluster analysis as a .csv file.
 
-    In: filt_cluster_data---cluster statistics following filtering (np array)
+    In: filt_cluster_data---cluster statistics following filtering (pd DataFrame)
     outpath---folder where data will be saved (str)
     coloc---specifies whether all data (coloc=0), non-colocalised data (coloc=1),
     or colocalised data (coloc=2) is to be saved (int)
@@ -150,19 +152,9 @@ def save_cluster_analysis(filt_cluster_data: pd.DataFrame, outpath: str, coloc: 
     Out: None but a .csv file with cluster stats is saved.
     """
 
-    if coloc == 0:
+    title = str(repeat_no) + '_' + condition + '_cluster_statistics.csv'
 
-        filt_cluster_data.to_csv(outpath + '/cluster_analysis.csv', sep=',',
-                                 index=False)
-
-    elif coloc == 1:
-
-        filt_cluster_data.to_csv(outpath + '/cluster_analysis_no_coloc.csv', sep=',',
-                                 index=False)
-    
-    else:
-
-        filt_cluster_data.to_csv(outpath + '/cluster_analysis_coloc.csv', sep=',',
+    filt_cluster_data.to_csv(os.path.join(outpath, title), sep=',',
                                  index=False)
 
 def save_statistics(cluster_statistics: dict, out: str, coloc: int=0):

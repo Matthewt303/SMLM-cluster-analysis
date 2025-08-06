@@ -1,5 +1,7 @@
 import ripleyk
 import numpy as np
+from file_io import user_input, load_locs, extract_xy, save_max_r
+from plots import plot_ripley_h
 
 def generate_radii(bounding_radius: float, increment: float) -> list[float]:
 
@@ -73,3 +75,34 @@ def calculate_rmax(h_values: 'np.ndarray[np.float64]', radii: list[float]) -> fl
     """
 
     return radii[h_values.argmax()]
+
+def main():
+
+    """
+    Contains functions for Ripley K-function cluster classification.
+    """
+
+    print('Enter path to localisation file')
+    path = user_input()
+
+    print('Enter folder for things to be saved.')
+    outpath = user_input()
+    
+    data = load_locs(path)
+
+    xy = extract_xy(data)
+    
+    radii = generate_radii(bounding_radius=1500,
+                           increment=10)
+    
+    k_values = ripley_k_function(xy, r=radii, br=1500)
+
+    l_values = ripley_l_function(k_values=k_values)
+
+    h_values = ripley_h_function(l_values=l_values, radii=radii)
+
+    plot_ripley_h(h_values=h_values, radii=radii, out=outpath)
+
+    rmax = calculate_rmax(h_values=h_values, radii=radii)
+
+    save_max_r(outpath=outpath, max_r=rmax)

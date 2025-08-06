@@ -2,8 +2,67 @@ import numpy as np
 import pandas as pd
 from scipy.spatial import ConvexHull
 from sklearn.metrics import pairwise_distances
+from collections import Counter
+from sklearn.cluster import HDBSCAN
+from file_io import user_input, load_locs, extract_xy, save_dbscan_results
+from file_io import save_cluster_analysis, save_statistics
+from plots import plot_cluster_statistics
 
 ## Cluster analysis functions
+
+def hdbscan(locs: 'np.ndarray[np.float64]', min_n: int) -> 'np.ndarray[np.float64]':
+
+    """"
+    HDBSCAN clustering of localization data. Returns the localisation data
+    with the cluster assignments for each localisation.
+
+    In: locs---localization table (numpy array)
+    min_n---minimum number of points for cluster classification (int)
+
+    Out: localization table---with cluster classification and probabilities.
+    """
+
+    # Instantiate and fit
+    hdbscan = HDBSCAN(min_cluster_size=min_n).fit(locs[:, 2:4].reshape(-1, 2))
+
+    # Cluster labels
+    labels = hdbscan.labels_
+
+    # Reassgine label for noise to avoid zero division problems
+    labels[(labels == 0)] = -1
+
+    cluster_probabilities = hdbscan.probabilities_
+
+    all_data = np.concatenate((locs, labels[:, np.newaxis], cluster_probabilities[:, np.newaxis]), axis=1).reshape(-1, 13)
+
+    return all_data
+
+def denoise_data(dbscan_data: 'np.ndarray[np.float64]', min_n: int) -> 'np.ndarray[np.float64]':
+
+    """
+    Removes clusters below a minimum localizations threshold and noise.
+    Returns localisation data with 'noise clusters' and small clusters
+    discarded.
+
+    In: dbscan_data---localization table with dbscan data (np array)
+    min_n---minimum number of points for a cluster to be retained
+    following filtering (int)
+    """
+
+    # Remove noise
+    noiseless_data = dbscan_data[(dbscan_data[:, -2] > 0)]
+
+    # Count how many localisations are assigned to each cluster
+    label_count = dict(Counter(noiseless_data[:, -2]))
+
+    for label, count in label_count.items():
+
+        # If no. of localizations is below the threshold, discard from data
+        if count < min_n:
+                
+            noiseless_data = noiseless_data[(noiseless_data[:, -2] != float(label))]
+    
+    return noiseless_data
 
 def load_dbscan_data(path: str) -> 'np.ndarray[np.float64]':
 
@@ -213,7 +272,8 @@ def filter_clusters(cluster_data: 'np.ndarray[np.float64]') -> 'np.ndarray[np.fl
     return filt_all
 
 
-def convert_to_dataframe(filt_cluster_data: 'np.ndarray[np.float64]') -> pd.DataFrame:
+def convert_to_dataframe(filt_cluster_data: 'np.ndarray[np.float64]',
+                         repeat: int, condition: str) -> pd.DataFrame:
 
     """
     Converts cluster analysis results to a dataframe.
@@ -232,7 +292,9 @@ def convert_to_dataframe(filt_cluster_data: 'np.ndarray[np.float64]') -> pd.Data
         'Circularity',
         'Intensity',
         'Density (n . um^-2)',
-        'label'
+        'label',
+        str(repeat),
+        condition
     ]
 
     cluster_data_df = pd.DataFrame(data=filt_cluster_data, columns=cols)
@@ -267,3 +329,51 @@ def calculate_statistics(filt_cluster_data: pd.DataFrame) -> dict:
         clust_statistics[filt_cluster_data.columns[i]] = statistics
 
     return clust_statistics
+
+def main():
+
+    """
+    This function also calculates statistics and plots them following separation
+    into colocalised vs non-colocalised. However, the separation is carried out
+    prior to HDBSCAN.
+    """
+
+    print('Enter file path to localisation data: ')
+    path = user_input()
+
+    print('Enter folder where you want things stored: ')
+    outpath = user_input()
+
+    data = load_locs(path, channels=2)
+
+    nocoloc, coloc = separate_coloc_data(data)
+
+    clusters_nocoloc, clusters_coloc = hdbscan(nocoloc, min_n=4), hdbscan(coloc, min_n=4)
+
+    clusters_nocoloc_filt, clusters_coloc_filt = denoise_data(clusters_nocoloc, min_n=4), denoise_data(clusters_coloc, min_n=4)
+    
+    save_dbscan_results(clusters_nocoloc_filt, n_channels=2, outpath=outpath)
+
+    save_dbscan_results(clusters_coloc_filt, n_channels=2, outpath=outpath, filt=1)
+
+    no_coloc_analysed, coloc_analysed = analyse_clusters(dbscan_data=clusters_nocoloc_filt), analyse_clusters(dbscan_data=clusters_coloc_filt)
+
+    no_coloc_analysed_filt, coloc_analysed_filt = filter_clusters(cluster_data=no_coloc_analysed), filter_clusters(coloc_analysed)
+
+    no_coloc_df, coloc_df = convert_to_dataframe(filt_cluster_data=no_coloc_analysed_filt), convert_to_dataframe(coloc_analysed_filt)
+
+    save_cluster_analysis(filt_cluster_data=no_coloc_df, outpath=outpath, coloc=1)
+
+    save_cluster_analysis(filt_cluster_data=coloc_df, outpath=outpath, coloc=2)
+
+    plot_cluster_statistics(filt_cluster_data=no_coloc_df, outpath=outpath, coloc=1)
+
+    plot_cluster_statistics(filt_cluster_data=coloc_df, outpath=outpath, coloc=2)
+
+    no_coloc_clust_stats = calculate_statistics(filt_cluster_data=no_coloc_df)
+
+    coloc_clust_stats = calculate_statistics(filt_cluster_data=coloc_df)
+
+    save_statistics(no_coloc_clust_stats, out=outpath, coloc=1)
+
+    save_statistics(coloc_clust_stats, out=outpath, coloc=2)
