@@ -90,8 +90,8 @@ def test2():
 
 def test3():
 
-    ch1 = np.random.rand(10000, 2)
-    ch2 = np.random.rand(10000, 2)
+    ch1 = np.random.rand(100000, 2)
+    ch2 = np.random.rand(100000, 2)
 
     x = nneighbor_sort_scipy(ch1, ch2)
 
@@ -101,4 +101,4 @@ def test3():
 if __name__ == "__main__":
 
     import timeit
-    print(timeit.timeit("test3()", number=100, setup="from __main__ import test3"))
+    print(timeit.timeit("test1()", number=100, setup="from __main__ import test1"))

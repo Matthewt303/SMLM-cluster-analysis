@@ -1,23 +1,13 @@
 import numpy as np
 import pandas as pd
-from numba import jit, prange
+from numba import jit
 import cv2 as cv
 from scipy import stats
+from scipy.spatial import cKDTree
 import time
-from file_io import user_input, extract_xy, load_locs
+from file_io import user_input, extract_xy, load_locs, save_corrected_channels
 from cluster_detection import generate_radii
 
-def extract_xy_cr(locs: 'np.ndarray[np.float64]') -> 'np.ndarray[np.float32]':
-
-    """
-    Extract xy locs again but as 32 bit floating integers.
-
-    In: locs---localisation table (np array)
-
-    Out: xy localisations (np array, 32-bit floats)
-    """
-
-    return locs[:, 2:4].reshape(-1, 2).astype(np.float32)
 
 def calculate_transformation_matrix(channel1: 'np.ndarray[np.float32]', channel2: 'np.ndarray[np.float32]') -> 'np.ndarray[np.float32]':
 
@@ -31,7 +21,7 @@ def calculate_transformation_matrix(channel1: 'np.ndarray[np.float32]', channel2
     (np array)
     """
 
-    M, inliers = cv.estimateAffinePartial2D(channel1, channel2)
+    M, _ = cv.estimateAffinePartial2D(channel1, channel2)
 
     return M
 
@@ -79,39 +69,6 @@ def filter_bead_locs(ch1_locs: 'np.ndarray[np.float64]', ch2_locs: 'np.ndarray[n
     
     return ch1_filt.astype(np.float32), ch2_filt.astype(np.float32)
 
-def save_corrected_channels(cor_locs: 'np.ndarray[np.float64]', locs:'np.ndarray[np.float64]', out: str):
-
-    """
-    This function combines the registered xy localisations with the
-    rest of the localisation table and saves it as a .csv file. Note:
-    this function probably needs to be refactored to save it as a dataframe.
-
-    In: cor_locs---registered xy localisations (np array)
-    locs---the full localisation table (np array)
-    out---user-specified output folder (str)
-
-    Out: cor_data---localisation table with registered xy localisations.
-    A .csv file is also saved in the specified output folder.
-    """
-
-    cor_data = np.hstack((locs[:, 0:2], cor_locs, locs[:, 4:])).reshape(locs.shape[0], 9)
-
-    cols = ['id',
-            'frame',
-            'x [nm]',
-            'y [nm]',
-            'sigma [nm]',
-            'intensity [photons]',
-            'offset [photons]',
-            'bkgstd [photons]',
-            'uncertainty [nm]'
-            ]
-
-    locs_df = pd.DataFrame(data=cor_data, columns=cols)
-
-    locs_df.to_csv(out + '/corrected_locs.csv', index=False)
-    
-    return cor_data
 
 ## Functions for two-color STORM---CBC analysis
 
@@ -273,7 +230,6 @@ def calc_spearman_cor_coeff(ch1_dist: 'np.ndarray[np.float64]', ch2_dist: 'np.nd
 
     return spearman_cor_coeffs.reshape(ch1_dist.shape[0], 1)
 
-@jit(nopython=True, nogil=True, cache=False, parallel=True)
 def calculate_nneighbor_dist(ch1_locs: 'np.ndarray[np.float64]', ch2_locs: 'np.ndarray[np.float64]', radii: list[float]) -> 'np.ndarray[np.float64]':
 
     """
@@ -291,16 +247,10 @@ def calculate_nneighbor_dist(ch1_locs: 'np.ndarray[np.float64]', ch2_locs: 'np.n
 
     """
 
-    distances = np.zeros((ch1_locs.shape[0], 1))
-
-    for i in prange(0, ch1_locs.shape[0]):
-
-        x0, y0 = ch1_locs[i, 0], ch1_locs[i, 1]
-
-        distances[i, 0] = np.min(np.sqrt((ch2_locs[:, 0] - x0)**2 + 
-                                  (ch2_locs[:, 1] - y0)**2))
+    tree = cKDTree(ch2_locs)
+    distances, _ = tree.query(ch1_locs, k=1)  # k=1 for nearest neighbor
     
-    return distances / max(radii)
+    return distances.reshape(-1, 1) / max(radii)
 
 @jit(nopython=True, nogil=True, cache=False)
 def calc_coloc_values(spearman: 'np.ndarray[np.float64]', ch1_locs: 'np.ndarray[np.float64]', ch2_locs: 'np.ndarray[np.float64]', radii: list[float]) -> 'np.ndarray[np.float64]':
@@ -406,9 +356,9 @@ def main():
 
     green_locs, red_locs = load_locs(path=green_ch_path), load_locs(path=red_ch_path)
 
-    green_locs_xy = extract_xy_cr(locs=green_locs)
+    green_locs_xy = extract_xy(locs=green_locs)
     
-    green_bead_xy, red_bead_xy = extract_xy_cr(locs=green_beads), extract_xy_cr(locs=red_beads)
+    green_bead_xy, red_bead_xy = extract_xy(locs=green_beads), extract_xy(locs=red_beads)
 
     matrix = calculate_transformation_matrix(channel1=green_bead_xy, channel2=red_bead_xy)
 

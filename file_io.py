@@ -2,41 +2,7 @@ import numpy as np
 import pandas as pd
 import os
 
-def user_input() -> str:
-
-    """
-    Accepts user input.
-
-    In: None
-    
-    Out: input_text---string entered by the user.
-    """
-
-    counter = 0
-
-    input_text = ''
-
-    while True:
-
-        if counter == 3:
-
-            raise SystemError('Too many incorrect attempts, exiting.')
-        
-        input_text = input('')
-        
-        if len(input_text) > 0:
-
-            break
-
-        else:
-
-            counter += 1
-
-            print('Invalid input, you have 3 - ' + str(counter) + 'attempts remaining')
-        
-    return input_text
-
-def load_locs(path: str, channels: int=1) -> 'np.ndarray[np.float64]':
+def load_locs(path: str, channels: int=1) -> 'np.ndarray[np.float32]':
 
     """
     Extract localisation data from .csv file, preferably from ThunderSTORM
@@ -60,7 +26,7 @@ def load_locs(path: str, channels: int=1) -> 'np.ndarray[np.float64]':
 
         return locs.reshape(-1, 11)
 
-def extract_xy(locs: 'np.ndarray[np.float64]') -> 'np.ndarray[np.float64]': 
+def extract_xy(locs: 'np.ndarray[np.float32]') -> 'np.ndarray[np.float32]': 
 
     """
     Extract xy localisations.
@@ -82,6 +48,40 @@ def save_max_r(outpath: str, max_r: float) -> None:
 
         f.write('The maximum value of r is: ' + str(max_r)
                 + ' nm')
+
+def save_corrected_channels(cor_locs: 'np.ndarray[np.float64]', locs:'np.ndarray[np.float64]', out: str):
+
+    """
+    This function combines the registered xy localisations with the
+    rest of the localisation table and saves it as a .csv file. Note:
+    this function probably needs to be refactored to save it as a dataframe.
+
+    In: cor_locs---registered xy localisations (np array)
+    locs---the full localisation table (np array)
+    out---user-specified output folder (str)
+
+    Out: cor_data---localisation table with registered xy localisations.
+    A .csv file is also saved in the specified output folder.
+    """
+
+    cor_data = np.hstack((locs[:, 0:2], cor_locs, locs[:, 4:])).reshape(locs.shape[0], 9)
+
+    cols = ['id',
+            'frame',
+            'x [nm]',
+            'y [nm]',
+            'sigma [nm]',
+            'intensity [photons]',
+            'offset [photons]',
+            'bkgstd [photons]',
+            'uncertainty [nm]'
+            ]
+
+    locs_df = pd.DataFrame(data=cor_data, columns=cols)
+
+    locs_df.to_csv(os.path.join(out, "corrected_locs.csv"), index=False)
+    
+    return cor_data
 
 def save_dbscan_results(data: 'np.ndarray[np.float64]', n_channels: int, outpath: str, filt: int=0):
 
