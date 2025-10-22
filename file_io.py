@@ -79,9 +79,40 @@ def save_corrected_channels(cor_locs: 'np.ndarray[np.float64]', locs:'np.ndarray
 
     locs_df = pd.DataFrame(data=cor_data, columns=cols)
 
-    locs_df.to_csv(os.path.join(out, "corrected_locs.csv"), index=False)
+    locs_df.to_csv(os.path.join(out, "corrected_locs_ch1.csv"), index=False)
     
     return cor_data
+
+def save_locs_colocs(processed_data: 'np.ndarray[np.float32]', channel: int, out: str):
+
+    """
+    Save localisations with correlation coefficients as .csv file. Note
+    this should probably be refactored to save data as a pd dataframe.
+
+    In: processed_data---localisation table with correlation coefficients 
+    (np array)
+    out---user-specified output folder (str)
+
+    Out: None but a .csv file should be saved.
+    """
+
+    cols = ['id',
+            'frame',
+            'x [nm]',
+            'y [nm]',
+            'sigma [nm]',
+            'intensity [photons]',
+            'offset [photons]',
+            'bkgstd [photons]',
+            'uncertainty [nm]',
+            'channel',
+            'cor_coeff'
+            ]
+
+    locs_proc = pd.DataFrame(data=processed_data, columns=cols)
+
+    locs_proc.to_csv(os.path.join(out, "processed_locs_" +
+                                  str(channel) + '.csv'), index=False)
 
 def save_dbscan_results(data: 'np.ndarray[np.float64]', n_channels: int, outpath: str, filt: int=0):
 

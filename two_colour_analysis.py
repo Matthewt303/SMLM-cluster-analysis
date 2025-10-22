@@ -1,11 +1,10 @@
 import numpy as np
-import pandas as pd
-from numba import jit
+from numba import jit, prange
 import cv2 as cv
 from scipy import stats
 from scipy.spatial import cKDTree
 import time
-from file_io import user_input, extract_xy, load_locs, save_corrected_channels
+from file_io import extract_xy, load_locs, save_corrected_channels, save_locs_colocs
 from cluster_detection import generate_radii
 
 
@@ -25,7 +24,7 @@ def calculate_transformation_matrix(channel1: 'np.ndarray[np.float32]', channel2
 
     return M
 
-def register_channel(channel: 'np.ndarray[np.float64]', matrix: 'np.ndarray[np.float32]') -> 'np.ndarray[np.float64]':
+def register_channel(channel: 'np.ndarray[np.float32]', matrix: 'np.ndarray[np.float32]') -> 'np.ndarray[np.float32]':
 
     """
     This function takes a transformation matrix, applies the matrix
@@ -47,7 +46,7 @@ def register_channel(channel: 'np.ndarray[np.float64]', matrix: 'np.ndarray[np.f
 
     return corrected_channel.reshape(channel.shape[0], 2)
 
-def filter_bead_locs(ch1_locs: 'np.ndarray[np.float64]', ch2_locs: 'np.ndarray[np.float64]', nneighbors: 'np.ndarray[np.float64]') -> 'np.ndarray[np.float32]':
+def filter_bead_locs(ch1_locs: 'np.ndarray[np.float32]', ch2_locs: 'np.ndarray[np.float32]', nneighbors: 'np.ndarray[np.float32]') -> 'np.ndarray[np.float32]':
 
     """
     This function removes bead localisations following registration if the distance to its nearest neighbor
@@ -72,9 +71,10 @@ def filter_bead_locs(ch1_locs: 'np.ndarray[np.float64]', ch2_locs: 'np.ndarray[n
 
 ## Functions for two-color STORM---CBC analysis
 
-def add_channel(locs: 'np.ndarray[np.float64]', channel: int) -> 'np.ndarray[np.float64]':
+def add_channel(locs: 'np.ndarray[np.float32]', channel: int) -> 'np.ndarray[np.float32]':
 
     """
+
     This function adds a column to specify the appropriate channel
     to the localisation table.
 
@@ -89,8 +89,8 @@ def add_channel(locs: 'np.ndarray[np.float64]', channel: int) -> 'np.ndarray[np.
 
     return np.hstack((locs, channel_col)).reshape(locs.shape[0], 10)
 
-@jit(nopython=True, nogil=True, cache=False, parallel=True)
-def calc_counts_with_radius(locs: 'np.ndarray[np.float64]', x0: float, y0: float, radii: list[float]) -> 'np.ndarray[np.int64]':
+@jit(nopython=True, nogil=True, cache=False)
+def calc_counts_with_radius(locs: 'np.ndarray[np.float32]', x0: float, y0: float, radii: list[float]) -> 'np.ndarray[np.int64]':
 
     """
     Calculate number of localisations from a list of increasing radii.
@@ -119,7 +119,7 @@ def calc_counts_with_radius(locs: 'np.ndarray[np.float64]', x0: float, y0: float
         
         loc_counts_with_r[0, i] = filt_locs.shape[0] + 1
     
-    return loc_counts_with_r
+    return loc_counts_with_r.astype(np.float32)
 
 def convert_radii_to_areas(radii: list[float]) -> list[float]:
 
@@ -141,7 +141,7 @@ def convert_radii_to_areas(radii: list[float]) -> list[float]:
     return areas
 
 @jit(nopython=True, nogil=True, cache=False)
-def calc_loc_distribution(counts: 'np.ndarray[np.int64]', radii: list[float], areas: list[float]) -> 'np.ndarray[np.float64]':
+def calc_loc_distribution(counts: 'np.ndarray[np.int64]', radii: list[float], areas: list[float]) -> 'np.ndarray[np.float32]':
 
     """
     Calculates distribution of number of localisations with increasing radii
@@ -154,13 +154,15 @@ def calc_loc_distribution(counts: 'np.ndarray[np.int64]', radii: list[float], ar
     """
 
     max_r = max(radii)
+    areas = np.array(areas).astype(np.float32)
 
-    cbc = counts / np.sum(counts) * (max_r ** 2 / np.array(areas) ** 2)
+    d = counts / np.sum(counts) * (max_r ** 2 / areas ** 2)
+    print(d.shape)
 
-    return cbc
+    return d
 
 @jit(nopython=True, nogil=True, cache=False, parallel=True)
-def calc_all_distributions(channel1_locs: 'np.ndarray[np.float64]', channel2_locs: 'np.ndarray[np.float64]', radii: list[float], areas: list[float]) -> 'np.ndarray[np.float64]':
+def calc_all_distributions(channel1_locs: 'np.ndarray[np.float32]', channel2_locs: 'np.ndarray[np.float32]', radii: list[float], areas: list[float]) -> 'np.ndarray[np.float32]':
 
     """
     Combines the previous two functions to calculate distributions along
@@ -176,13 +178,13 @@ def calc_all_distributions(channel1_locs: 'np.ndarray[np.float64]', channel2_loc
     dist_ch2---distribution of cbc values for channel 2 relative to channel 1
     """
 
-    dist_ch1 = np.zeros((channel1_locs.shape[0], len(areas)))
+    dist_ch1 = np.zeros((channel1_locs.shape[0], len(areas)), dtype=np.float32)
 
-    dist_ch2 = np.zeros((channel1_locs.shape[0], len(areas)))
+    dist_ch2 = np.zeros((channel1_locs.shape[0], len(areas)), dtype=np.float32)
 
     # Loop through all localisations
 
-    for i in range(0, channel1_locs.shape[0]):
+    for i in prange(0, channel1_locs.shape[0]):
 
         x0, y0 = channel1_locs[i, 0], channel1_locs[i, 1]
 
@@ -191,18 +193,18 @@ def calc_all_distributions(channel1_locs: 'np.ndarray[np.float64]', channel2_loc
             channel1_locs, x0, y0, radii
         )
 
-        dist_ch1 = calc_loc_distribution(ch1_counts, radii, areas)
+        dist_ch1[i, :] = calc_loc_distribution(ch1_counts, radii, areas)
 
         # Channel 2
         ch2_counts = calc_counts_with_radius(
             channel2_locs, x0, y0, radii
         )
 
-        dist_ch2 = calc_loc_distribution(ch2_counts, radii, areas)
+        dist_ch2[i, :] = calc_loc_distribution(ch2_counts, radii, areas)
     
     return dist_ch1, dist_ch2
 
-def calc_spearman_cor_coeff(ch1_dist: 'np.ndarray[np.float64]', ch2_dist: 'np.ndarray[np.float64]') -> 'np.ndarray[np.float64]':
+def calc_spearman_cor_coeff(ch1_dist: 'np.ndarray[np.float32]', ch2_dist: 'np.ndarray[np.float32]') -> 'np.ndarray[np.float32]':
 
     """
     Calculate Spearman correlation coefficients on a row-by-row basis
@@ -220,7 +222,7 @@ def calc_spearman_cor_coeff(ch1_dist: 'np.ndarray[np.float64]', ch2_dist: 'np.nd
     all localisations (np array)
     """
 
-    spearman_cor_coeffs = np.zeros((ch1_dist.shape[0], 1))
+    spearman_cor_coeffs = np.zeros((ch1_dist.shape[0], 1), dtype=np.float32)
 
     for i in range(0, ch1_dist.shape[0]):
 
@@ -230,7 +232,7 @@ def calc_spearman_cor_coeff(ch1_dist: 'np.ndarray[np.float64]', ch2_dist: 'np.nd
 
     return spearman_cor_coeffs.reshape(ch1_dist.shape[0], 1)
 
-def calculate_nneighbor_dist(ch1_locs: 'np.ndarray[np.float64]', ch2_locs: 'np.ndarray[np.float64]', radii: list[float]) -> 'np.ndarray[np.float64]':
+def calculate_nneighbor_dist(ch1_locs: 'np.ndarray[np.float32]', ch2_locs: 'np.ndarray[np.float32]', radii: list[float]) -> 'np.ndarray[np.float32]':
 
     """
     Calculate the nearest neighbours for a particular localisation
@@ -252,8 +254,7 @@ def calculate_nneighbor_dist(ch1_locs: 'np.ndarray[np.float64]', ch2_locs: 'np.n
     
     return distances.reshape(-1, 1) / max(radii)
 
-@jit(nopython=True, nogil=True, cache=False)
-def calc_coloc_values(spearman: 'np.ndarray[np.float64]', ch1_locs: 'np.ndarray[np.float64]', ch2_locs: 'np.ndarray[np.float64]', radii: list[float]) -> 'np.ndarray[np.float64]':
+def calc_coloc_values(spearman: 'np.ndarray[np.float32]', ch1_locs: 'np.ndarray[np.float32]', ch2_locs: 'np.ndarray[np.float32]', radii: list[float]) -> 'np.ndarray[np.float32]':
 
     """
     This function weights the spearman correlation coefficients
@@ -274,7 +275,7 @@ def calc_coloc_values(spearman: 'np.ndarray[np.float64]', ch1_locs: 'np.ndarray[
 
     return cbcs.reshape(ch1_locs.shape[0], 1)
 
-def add_coloc_values(locs: 'np.ndarray[np.float64]', coloc_values: 'np.ndarray[np.float64]') -> 'np.ndarray[np.float64]':
+def add_coloc_values(locs: 'np.ndarray[np.float32]', coloc_values: 'np.ndarray[np.float32]') -> 'np.ndarray[np.float32]':
 
     """
     Add correlation coefficients to localisation data.
@@ -287,38 +288,8 @@ def add_coloc_values(locs: 'np.ndarray[np.float64]', coloc_values: 'np.ndarray[n
 
     return np.hstack((locs, coloc_values)).reshape(locs.shape[0], 11)
 
-def save_locs_colocs(processed_data: 'np.ndarray[np.float64]', channel: int, out: str):
 
-    """
-    Save localisations with correlation coefficients as .csv file. Note
-    this should probably be refactored to save data as a pd dataframe.
-
-    In: processed_data---localisation table with correlation coefficients 
-    (np array)
-    out---user-specified output folder (str)
-
-    Out: None but a .csv file should be saved.
-    """
-
-    cols = ['id',
-            'frame',
-            'x [nm]',
-            'y [nm]',
-            'sigma [nm]',
-            'intensity [photons]',
-            'offset [photons]',
-            'bkgstd [photons]',
-            'uncertainty [nm]',
-            'channel',
-            'cor_coeff'
-            ]
-
-    locs_proc = pd.DataFrame(data=processed_data, columns=cols)
-
-    locs_proc.to_csv(out + '/processed_locs_' +
-    str(channel) + '.csv', index=False)
-
-def combine_channel_locs(ch1_locs: 'np.ndarray[np.float64]', ch2_locs: 'np.ndarray[np.float64]'):
+def combine_channel_locs(ch1_locs: 'np.ndarray[np.float32]', ch2_locs: 'np.ndarray[np.float32]'):
 
     """
     Combines the localisations of channel one, and two. Recommended to do
@@ -337,20 +308,15 @@ def main():
 
     start = time.perf_counter()
 
-    print('Enter path to beads for green channel.')
-    green_bead_ch_path = user_input()
+    green_bead_ch_path = "C:/Users/mxq76232/Downloads/test_coloc/bead_locs_488_filt.csv"
 
-    print('Enter path to beads for red channel.')
-    red_bead_ch_path = user_input()
+    red_bead_ch_path = "C:/Users/mxq76232/Downloads/test_coloc/bead_locs_640.csv"
 
-    print('Enter path to localisations in green channel.')
-    green_ch_path = user_input()
+    green_ch_path = "C:/Users/mxq76232/Downloads/test_coloc/reconstruction_filt_488.csv"
 
-    print('Enter path to localisations in red channel.')
-    red_ch_path = user_input()
+    red_ch_path = "C:/Users/mxq76232/Downloads/test_coloc/reconstruction_filt_640.csv"
 
-    print('Where you want things saved.')
-    out = user_input()
+    out = "C:/Users/mxq76232/Downloads/test_coloc"
 
     green_beads, red_beads = load_locs(path=green_bead_ch_path), load_locs(path=red_bead_ch_path)
 
@@ -407,3 +373,6 @@ def main():
 
     end = time.perf_counter()
     print("Elapsed (with compilation) = {}s".format((end - start)))
+
+if __name__ == "__main__":
+    main()

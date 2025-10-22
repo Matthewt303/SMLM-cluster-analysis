@@ -1,6 +1,6 @@
 import ripleyk
 import numpy as np
-from file_io import user_input, load_locs, extract_xy, save_max_r
+from file_io import load_locs, extract_xy, save_max_r
 from plots import plot_ripley_h
 
 def generate_radii(bounding_radius: float, increment: float) -> list[float]:
@@ -82,11 +82,9 @@ def main():
     Contains functions for Ripley K-function cluster classification.
     """
 
-    print('Enter path to localisation file')
-    path = user_input()
+    path = 'user_input()'
 
-    print('Enter folder for things to be saved.')
-    outpath = user_input()
+    outpath = 'user_input()'
     
     data = load_locs(path)
 
