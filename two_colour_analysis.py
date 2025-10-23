@@ -4,7 +4,7 @@ import cv2 as cv
 from scipy import stats
 from scipy.spatial import cKDTree
 import time
-from file_io import extract_xy, load_locs, save_corrected_channels, save_locs_colocs
+import file_io as io
 from cluster_detection import generate_radii
 
 
@@ -157,7 +157,6 @@ def calc_loc_distribution(counts: 'np.ndarray[np.int64]', radii: list[float], ar
     areas = np.array(areas).astype(np.float32)
 
     d = counts / np.sum(counts) * (max_r ** 2 / areas ** 2)
-    print(d.shape)
 
     return d
 
@@ -318,13 +317,13 @@ def main():
 
     out = "C:/Users/mxq76232/Downloads/test_coloc"
 
-    green_beads, red_beads = load_locs(path=green_bead_ch_path), load_locs(path=red_bead_ch_path)
+    green_beads, red_beads = io.load_locs(path=green_bead_ch_path), io.load_locs(path=red_bead_ch_path)
 
-    green_locs, red_locs = load_locs(path=green_ch_path), load_locs(path=red_ch_path)
+    green_locs, red_locs = io.load_locs(path=green_ch_path), io.load_locs(path=red_ch_path)
 
-    green_locs_xy = extract_xy(locs=green_locs)
+    green_locs_xy = io.extract_xy(locs=green_locs)
     
-    green_bead_xy, red_bead_xy = extract_xy(locs=green_beads), extract_xy(locs=red_beads)
+    green_bead_xy, red_bead_xy = io.extract_xy(locs=green_beads), io.extract_xy(locs=red_beads)
 
     matrix = calculate_transformation_matrix(channel1=green_bead_xy, channel2=red_bead_xy)
 
@@ -338,11 +337,11 @@ def main():
 
     green_xy_reg = register_channel(channel=green_locs_xy, matrix=matrix_2)
 
-    green_locs_cor = save_corrected_channels(cor_locs=green_xy_reg, locs=green_locs, out=out)
+    green_locs_cor = io.save_corrected_channels(cor_locs=green_xy_reg, locs=green_locs, out=out)
 
     green, red = add_channel(locs=green_locs_cor, channel=1), add_channel(locs=red_locs, channel=2)
 
-    green_xy, red_xy = extract_xy(green), extract_xy(red)
+    green_xy, red_xy = io.extract_xy(green), io.extract_xy(red)
     
     radii = generate_radii(bounding_radius=125, increment=25)
 
@@ -354,7 +353,7 @@ def main():
 
     colocs = calc_coloc_values(green_spearman, green_xy, red_xy, radii)
 
-    save_locs_colocs(add_coloc_values(locs=green, coloc_values=colocs),
+    io.save_locs_colocs(add_coloc_values(locs=green, coloc_values=colocs),
                        channel=1, out=out)
     
     rr_dist, rg_dist = calc_all_distributions(red_xy, green_xy, radii, areas)
@@ -363,13 +362,13 @@ def main():
 
     colocs_red = calc_coloc_values(red_spearman, red_xy, green_xy, radii)
     
-    save_locs_colocs(add_coloc_values(locs=red, coloc_values=colocs_red),
+    io.save_locs_colocs(add_coloc_values(locs=red, coloc_values=colocs_red),
                      channel=2, out=out)
     
     all_locs = combine_channel_locs(add_coloc_values(locs=green, coloc_values=colocs),
                                     add_coloc_values(locs=red, coloc_values=colocs_red))
 
-    save_locs_colocs(all_locs, channel=3, out=out)
+    io.save_locs_colocs(all_locs, channel=3, out=out)
 
     end = time.perf_counter()
     print("Elapsed (with compilation) = {}s".format((end - start)))
