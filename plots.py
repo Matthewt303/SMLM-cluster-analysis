@@ -3,6 +3,7 @@ import matplotlib as mpl
 from matplotlib.ticker import AutoMinorLocator
 import numpy as np
 import pandas as pd
+import os
 
 def plot_ripley_h(h_values: 'np.ndarray[np.float64]', radii: list[float], out: str):
 
@@ -20,12 +21,20 @@ def plot_ripley_h(h_values: 'np.ndarray[np.float64]', radii: list[float], out: s
     plt.ioff()
 
     mpl.rcParams['font.family'] = 'sans-serif'
-    mpl.rcParams['font.size'] = 10
+    mpl.rcParams['font.size'] = 24
 
-    fig, ax = plt.subplots(figsize=(8, 8), dpi=500)
+    fig, ax = plt.subplots(figsize=(10, 10), dpi=500)
 
-    ax.plot(radii, h_values, 'b', linewidth=5.0)
-    ax.axhline(y=0, color='r')
+    ax.plot(radii, h_values, 'b', linewidth=5.0, label="H(r)")
+    ax.axhline(y=0, color='r', label="H(r) = 0")
+
+    leg = plt.legend(bbox_to_anchor=(0.5, 1.175), loc="upper center", ncol=2)
+
+    for line in leg.get_lines():
+        line.set_linewidth(3.5)
+
+    for text in leg.get_texts():
+        text.set_fontsize(22)
 
     ax.set_xlim(left=0)
 
@@ -57,10 +66,11 @@ def plot_ripley_h(h_values: 'np.ndarray[np.float64]', radii: list[float], out: s
     ax.spines['left'].set_linewidth(1.0)
 
     # Axis labels
-    ax.set_xlabel('Radius (nm)', labelpad=6, fontsize=20)
-    ax.set_ylabel('H(r)', labelpad=2, fontsize=20)
+    ax.set_xlabel('Radius (nm)', labelpad=6, fontsize=30)
+    ax.set_ylabel('H(r)', labelpad=2, fontsize=30)
 
-    plt.savefig(out + '/ripley_hfunction.png')
+    plt.savefig(os.path.join(out, "ripley_h_func.svg"))
+    plt.savefig(os.path.join(out, "ripley_h_func.png"))
 
 def plot_bar_percent_coloc(percent_ch1: float, percent_ch2: float,
                            name_ch1: str, name_ch2: str, out: str):

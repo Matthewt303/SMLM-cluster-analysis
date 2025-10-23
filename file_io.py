@@ -44,7 +44,7 @@ def save_max_r(outpath: str, max_r: float) -> None:
     Save the value of the radius at which Ripley's H-function is at a maximum
     """
 
-    with open(outpath + '/max_r.txt', 'w') as f:
+    with open(os.path.join(outpath, "max_r.txt"), 'w') as f:
 
         f.write('The maximum value of r is: ' + str(max_r)
                 + ' nm')
