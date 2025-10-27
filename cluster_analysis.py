@@ -4,7 +4,7 @@ from scipy.spatial import ConvexHull
 from sklearn.metrics import pairwise_distances
 from collections import Counter
 from sklearn.cluster import HDBSCAN
-from file_io import user_input, load_locs, extract_xy, save_dbscan_results
+from file_io import load_locs, extract_xy, save_dbscan_results
 from file_io import save_cluster_analysis, save_statistics
 from plots import plot_cluster_statistics
 
@@ -240,7 +240,7 @@ def analyse_clusters(dbscan_data: 'np.ndarray[np.float64]') -> 'np.ndarray[np.fl
 
         cluster_points_xy = extract_xy(cluster_points)
 
-        intensity = calculate_ch1_intensity(cluster_points_xy)
+        intensity = calculate_ch1_intensity(cluster_points)
 
         center_of_mass = calculate_center_of_mass(cluster_points_xy)
 
@@ -280,8 +280,7 @@ def filter_clusters(cluster_data: 'np.ndarray[np.float64]') -> 'np.ndarray[np.fl
     return filt_all
 
 
-def convert_to_dataframe(filt_cluster_data: 'np.ndarray[np.float64]',
-                         repeat: int, condition: str) -> pd.DataFrame:
+def convert_to_dataframe(filt_cluster_data: 'np.ndarray[np.float64]') -> pd.DataFrame:
 
     """
     Converts cluster analysis results to a dataframe.
@@ -301,8 +300,6 @@ def convert_to_dataframe(filt_cluster_data: 'np.ndarray[np.float64]',
         'Intensity',
         'Density (n . um^-2)',
         'label',
-        str(repeat),
-        condition
     ]
 
     cluster_data_df = pd.DataFrame(data=filt_cluster_data, columns=cols)
@@ -345,18 +342,15 @@ def main():
     into colocalised vs non-colocalised. However, the separation is carried out
     prior to HDBSCAN.
     """
+    path = 'C:/Users/mxq76232/Downloads/test_coloc/processed_locs_3.csv'
 
-    print('Enter file path to localisation data: ')
-    path = user_input()
-
-    print('Enter folder where you want things stored: ')
-    outpath = user_input()
+    outpath = 'C:/Users/mxq76232/Downloads/test_coloc/clust'
 
     data = load_locs(path, channels=2)
 
-    nocoloc, coloc = separate_coloc_data(data)
+    _, coloc = separate_coloc_data(data)
 
-    clusters_coloc = hdbscan(nocoloc, min_n=4)
+    clusters_coloc = hdbscan(coloc, min_n=4)
 
     clusters_coloc_filt = denoise_data(clusters_coloc, min_n=4)
 
@@ -368,10 +362,13 @@ def main():
 
     coloc_df = convert_to_dataframe(coloc_analysed_filt)
 
-    save_cluster_analysis(filt_cluster_data=coloc_df, outpath=outpath, coloc=2)
+    save_cluster_analysis(filt_cluster_data=coloc_df, outpath=outpath)
 
     plot_cluster_statistics(filt_cluster_data=coloc_df, outpath=outpath, coloc=2)
 
     coloc_clust_stats = calculate_statistics(filt_cluster_data=coloc_df)
 
     save_statistics(coloc_clust_stats, out=outpath, coloc=2)
+
+if __name__ == "__main__":
+    main()

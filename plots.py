@@ -142,13 +142,14 @@ def plot_histogram(data: pd.DataFrame, title: str, out: str, coloc: int=0):
 
     weights = np.ones_like(data) / float(len(data))
 
+    mpl.rcParams["font.sans-serif"] = ["Arial"]
     mpl.rcParams['font.family'] = 'sans-serif'
-    mpl.rcParams['font.size'] = 24
+    mpl.rcParams['font.size'] = 28
 
     fig, ax = plt.subplots(figsize=(10, 10), dpi=500)
 
     plt.hist(data, bins=20, weights=weights, edgecolor='black',
-             linewidth=1.1, color='darkred')
+             linewidth=2.0, color='darkred')
 
     ax.set_xlim(right=np.max(data) + 0.05 * np.max(data))
     
@@ -179,8 +180,8 @@ def plot_histogram(data: pd.DataFrame, title: str, out: str, coloc: int=0):
     ax.spines['right'].set_linewidth(1.0)
     ax.spines['left'].set_linewidth(1.0)
 
-    ax.set_xlabel(title, labelpad=6, fontsize=30)
-    ax.set_ylabel('Frequency', labelpad=6, fontsize=30)
+    ax.set_xlabel(title, labelpad=6, fontsize=32)
+    ax.set_ylabel('Normalized frequency', labelpad=4, fontsize=32)
 
     if coloc == 0:
     

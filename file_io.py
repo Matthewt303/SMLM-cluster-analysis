@@ -163,14 +163,13 @@ def save_dbscan_results(data: 'np.ndarray[np.float64]', n_channels: int, outpath
 
     if filt == 0:
     
-        dbscan_results_df.to_csv(outpath + '/dbscan_output.csv', index=False)
+        dbscan_results_df.to_csv(os.path.join(outpath, 'dbscan_output.csv'), index=False)
 
     else:
 
-        dbscan_results_df.to_csv(outpath + '/filt_dbscan_output.csv', index=False)
+        dbscan_results_df.to_csv(os.path.join(outpath, 'filt_dbscan_output.csv'), index=False)
 
-def save_cluster_analysis(filt_cluster_data: 'pd.DataFrame', outpath: str,
-                          repeat_no: int, condition: str):
+def save_cluster_analysis(filt_cluster_data: 'pd.DataFrame', outpath: str):
 
     """
     Save results of cluster analysis as a .csv file.
@@ -183,7 +182,7 @@ def save_cluster_analysis(filt_cluster_data: 'pd.DataFrame', outpath: str,
     Out: None but a .csv file with cluster stats is saved.
     """
 
-    title = str(repeat_no) + '_' + condition + '_cluster_statistics.csv'
+    title = 'cluster_statistics.csv'
 
     filt_cluster_data.to_csv(os.path.join(outpath, title), sep=',',
                                  index=False)
@@ -204,7 +203,7 @@ def save_statistics(cluster_statistics: dict, out: str, coloc: int=0):
 
     if coloc == 0:
 
-        with open(out + '/cluster_stats_summary.txt', 'w') as f:
+        with open(os.path.join(out, "cluster_stats_summary.txt"), 'w') as f:
             
             for stat in cluster_statistics:
 
@@ -213,7 +212,7 @@ def save_statistics(cluster_statistics: dict, out: str, coloc: int=0):
     
     elif coloc == 1:
 
-        with open(out + '/cluster_stats_summary_no_coloc.txt', 'w') as f:
+        with open(os.path.join(out, "cluster_stats_summary_no_coloc.txt"), 'w') as f:
             
             for stat in cluster_statistics:
 
@@ -222,7 +221,7 @@ def save_statistics(cluster_statistics: dict, out: str, coloc: int=0):
     
     else:
 
-        with open(out + '/cluster_stats_summary_coloc.txt', 'w') as f:
+        with open(os.path.join(out, "cluster_stats_summary_coloc.txt"), 'w') as f:
             
             for stat in cluster_statistics:
 
