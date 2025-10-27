@@ -122,18 +122,26 @@ def separate_coloc_data(dbscan_data: 'np.ndarray[np.float64]', threshold: float=
 
     return no_coloc, coloc
 
-def calculate_intensity(points: 'np.ndarray[np.float64]') -> int:
+def calculate_ch1_intensity(cluster_points: 'np.ndarray[np.float64]') -> int:
 
     """
-    Calculates cluster intensity, i.e. how many localisations per cluster.
+    Calculates cluster intensity, i.e. how many localisations of channel 1
+    per cluster.
 
-    In: points---xy localisations (np array)
+    In: cluster_points---cluster data (np array)
 
     Out: the number of xy localisations, indicator of cluster intensity.
     Not to be confused with fluorescent intensity
     """
 
-    return np.size(points, axis=0)
+    ch1_indices = np.where(cluster_points[:, 9] == 1)[0]
+
+    if not ch1_indices.size > 0:
+        return 0
+    else:
+        ch1_locs = cluster_points[ch1_indices, :]
+
+        return np.size(ch1_locs, axis=0)
 
 def calculate_center_of_mass(points: 'np.ndarray[np.float64]') -> 'np.ndarray[np.float64]':
 
@@ -232,7 +240,7 @@ def analyse_clusters(dbscan_data: 'np.ndarray[np.float64]') -> 'np.ndarray[np.fl
 
         cluster_points_xy = extract_xy(cluster_points)
 
-        intensity = calculate_intensity(cluster_points_xy)
+        intensity = calculate_ch1_intensity(cluster_points_xy)
 
         center_of_mass = calculate_center_of_mass(cluster_points_xy)
 
@@ -348,32 +356,22 @@ def main():
 
     nocoloc, coloc = separate_coloc_data(data)
 
-    clusters_nocoloc, clusters_coloc = hdbscan(nocoloc, min_n=4), hdbscan(coloc, min_n=4)
+    clusters_coloc = hdbscan(nocoloc, min_n=4)
 
-    clusters_nocoloc_filt, clusters_coloc_filt = denoise_data(clusters_nocoloc, min_n=4), denoise_data(clusters_coloc, min_n=4)
-    
-    save_dbscan_results(clusters_nocoloc_filt, n_channels=2, outpath=outpath)
+    clusters_coloc_filt = denoise_data(clusters_coloc, min_n=4)
 
     save_dbscan_results(clusters_coloc_filt, n_channels=2, outpath=outpath, filt=1)
 
-    no_coloc_analysed, coloc_analysed = analyse_clusters(dbscan_data=clusters_nocoloc_filt), analyse_clusters(dbscan_data=clusters_coloc_filt)
+    coloc_analysed = analyse_clusters(dbscan_data=clusters_coloc_filt)
 
-    no_coloc_analysed_filt, coloc_analysed_filt = filter_clusters(cluster_data=no_coloc_analysed), filter_clusters(coloc_analysed)
+    coloc_analysed_filt =  filter_clusters(coloc_analysed)
 
-    no_coloc_df, coloc_df = convert_to_dataframe(filt_cluster_data=no_coloc_analysed_filt), convert_to_dataframe(coloc_analysed_filt)
-
-    save_cluster_analysis(filt_cluster_data=no_coloc_df, outpath=outpath, coloc=1)
+    coloc_df = convert_to_dataframe(coloc_analysed_filt)
 
     save_cluster_analysis(filt_cluster_data=coloc_df, outpath=outpath, coloc=2)
 
-    plot_cluster_statistics(filt_cluster_data=no_coloc_df, outpath=outpath, coloc=1)
-
     plot_cluster_statistics(filt_cluster_data=coloc_df, outpath=outpath, coloc=2)
 
-    no_coloc_clust_stats = calculate_statistics(filt_cluster_data=no_coloc_df)
-
     coloc_clust_stats = calculate_statistics(filt_cluster_data=coloc_df)
-
-    save_statistics(no_coloc_clust_stats, out=outpath, coloc=1)
 
     save_statistics(coloc_clust_stats, out=outpath, coloc=2)

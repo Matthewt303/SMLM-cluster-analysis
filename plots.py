@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 import matplotlib as mpl
-from matplotlib.ticker import AutoMinorLocator
+from matplotlib.ticker import AutoMinorLocator, FormatStrFormatter
 import numpy as np
 import pandas as pd
 import os
@@ -52,6 +52,7 @@ def plot_ripley_h(h_values: 'np.ndarray[np.float64]', radii: list[float], out: s
 
     ax.xaxis.set_minor_locator(AutoMinorLocator(10))
     ax.yaxis.set_minor_locator(AutoMinorLocator(10))
+    ax.yaxis.set_major_formatter(FormatStrFormatter("%.2f"))
 
     ax.xaxis.label.set_color('black')
     ax.yaxis.label.set_color('black')
@@ -141,9 +142,9 @@ def plot_histogram(data: pd.DataFrame, title: str, out: str, coloc: int=0):
     weights = np.ones_like(data) / float(len(data))
 
     mpl.rcParams['font.family'] = 'sans-serif'
-    mpl.rcParams['font.size'] = 11
+    mpl.rcParams['font.size'] = 24
 
-    fig, ax = plt.subplots(figsize=(8, 8), dpi=500)
+    fig, ax = plt.subplots(figsize=(10, 10), dpi=500)
 
     plt.hist(data, bins=20, weights=weights, edgecolor='black',
              linewidth=1.1, color='darkred')
@@ -163,6 +164,7 @@ def plot_histogram(data: pd.DataFrame, title: str, out: str, coloc: int=0):
 
     ax.xaxis.set_minor_locator(AutoMinorLocator(10))
     ax.yaxis.set_minor_locator(AutoMinorLocator(10))
+    ax.yaxis.set_major_formatter(FormatStrFormatter("%.2f"))
 
     ax.xaxis.label.set_color('black')
     ax.yaxis.label.set_color('black')
@@ -176,20 +178,23 @@ def plot_histogram(data: pd.DataFrame, title: str, out: str, coloc: int=0):
     ax.spines['right'].set_linewidth(1.0)
     ax.spines['left'].set_linewidth(1.0)
 
-    ax.set_xlabel(title, labelpad=6, fontsize=20)
-    ax.set_ylabel('Frequency', labelpad=6, fontsize=20)
+    ax.set_xlabel(title, labelpad=6, fontsize=30)
+    ax.set_ylabel('Frequency', labelpad=6, fontsize=30)
 
     if coloc == 0:
     
-        plt.savefig(out + '/' + title + '.png')
+        plt.savefig(os.path.join(out, title + '.png'))
+        plt.savefig(os.path.join(out, title + '.svg'))
     
     elif coloc == 1:
 
-        plt.savefig(out + '/' + title + '_no_coloc.png')
+        plt.savefig(os.path.join(out, title + '_no_coloc.png'))
+        plt.savefig(os.path.join(out, title + '_no_coloc.svg'))
     
     else:
 
-        plt.savefig(out + '/' + title + '_coloc.png')
+        plt.savefig(os.path.join(out, title + '_coloc.png'))
+        plt.savefig(os.path.join(out, title + '_coloc.svg'))
 
 def plot_cluster_statistics(filt_cluster_data: pd.DataFrame, outpath: str, coloc: int=0):
 
