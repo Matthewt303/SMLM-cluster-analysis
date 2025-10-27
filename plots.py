@@ -20,21 +20,22 @@ def plot_ripley_h(h_values: 'np.ndarray[np.float64]', radii: list[float], out: s
 
     plt.ioff()
 
+    mpl.rcParams["font.sans-serif"] = ["Arial"]
     mpl.rcParams['font.family'] = 'sans-serif'
-    mpl.rcParams['font.size'] = 24
+    mpl.rcParams['font.size'] = 28
 
     fig, ax = plt.subplots(figsize=(10, 10), dpi=500)
 
-    ax.plot(radii, h_values, 'b', linewidth=5.0, label="H(r)")
-    ax.axhline(y=0, color='r', label="H(r) = 0")
+    ax.plot(radii, h_values / 100, 'darkblue', linewidth=5.0, label="H(r)")
+    ax.axhline(y=0, color='darkred', linewidth=4.5, label="H(r) = 0")
 
-    leg = plt.legend(bbox_to_anchor=(0.5, 1.175), loc="upper center", ncol=2)
+    leg = plt.legend(bbox_to_anchor=(0.5, 1.125), loc="upper center", ncol=2)
 
     for line in leg.get_lines():
         line.set_linewidth(3.5)
 
     for text in leg.get_texts():
-        text.set_fontsize(22)
+        text.set_fontsize(28)
 
     ax.set_xlim(left=0)
 
@@ -52,7 +53,7 @@ def plot_ripley_h(h_values: 'np.ndarray[np.float64]', radii: list[float], out: s
 
     ax.xaxis.set_minor_locator(AutoMinorLocator(10))
     ax.yaxis.set_minor_locator(AutoMinorLocator(10))
-    ax.yaxis.set_major_formatter(FormatStrFormatter("%.2f"))
+    ax.yaxis.set_major_formatter(FormatStrFormatter("%.0f"))
 
     ax.xaxis.label.set_color('black')
     ax.yaxis.label.set_color('black')
@@ -67,8 +68,8 @@ def plot_ripley_h(h_values: 'np.ndarray[np.float64]', radii: list[float], out: s
     ax.spines['left'].set_linewidth(1.0)
 
     # Axis labels
-    ax.set_xlabel('Radius (nm)', labelpad=6, fontsize=30)
-    ax.set_ylabel('H(r)', labelpad=2, fontsize=30)
+    ax.set_xlabel('Radius (nm)', labelpad=6, fontsize=36)
+    ax.set_ylabel('H(r) x 100', labelpad=2, fontsize=36)
 
     plt.savefig(os.path.join(out, "ripley_h_func.svg"))
     plt.savefig(os.path.join(out, "ripley_h_func.png"))

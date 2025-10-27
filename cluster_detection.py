@@ -82,11 +82,11 @@ def main():
     Contains functions for Ripley K-function cluster classification.
     """
 
-    path = 'user_input()'
+    path = 'C:/Users/mxq76232/Downloads/test_coloc/loc_roi.csv'
 
-    outpath = 'user_input()'
+    outpath = 'C:/Users/mxq76232/Downloads/test_coloc'
     
-    data = load_locs(path)
+    data = load_locs(path, channels=2)
 
     xy = extract_xy(data)
     
@@ -104,3 +104,6 @@ def main():
     rmax = calculate_rmax(h_values=h_values, radii=radii)
 
     save_max_r(outpath=outpath, max_r=rmax)
+
+if __name__ == "__main__":
+    main()
