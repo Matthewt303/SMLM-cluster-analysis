@@ -3,9 +3,6 @@ from numba import jit, prange
 import cv2 as cv
 from scipy import stats
 from scipy.spatial import cKDTree
-import time
-import smlm_clust_analysis.internals.file_io as io
-from smlm_clust_analysis.internals.cluster_detection import generate_radii
 
 
 def calculate_transformation_matrix(channel1: 'np.ndarray[np.float32]', channel2: 'np.ndarray[np.float32]') -> 'np.ndarray[np.float32]':
@@ -302,76 +299,3 @@ def combine_channel_locs(ch1_locs: 'np.ndarray[np.float32]', ch2_locs: 'np.ndarr
     """
 
     return np.vstack((ch1_locs, ch2_locs))
-
-def main():
-
-    start = time.perf_counter()
-
-    green_bead_ch_path = "C:/Users/mxq76232/Downloads/test_coloc/bead_locs_488_filt.csv"
-
-    red_bead_ch_path = "C:/Users/mxq76232/Downloads/test_coloc/bead_locs_640.csv"
-
-    green_ch_path = "C:/Users/mxq76232/Downloads/test_coloc/reconstruction_filt_488.csv"
-
-    red_ch_path = "C:/Users/mxq76232/Downloads/test_coloc/reconstruction_filt_640.csv"
-
-    out = "C:/Users/mxq76232/Downloads/test_coloc"
-
-    green_beads, red_beads = io.load_locs(path=green_bead_ch_path), io.load_locs(path=red_bead_ch_path)
-
-    green_locs, red_locs = io.load_locs(path=green_ch_path), io.load_locs(path=red_ch_path)
-
-    green_locs_xy = io.extract_xy(locs=green_locs)
-    
-    green_bead_xy, red_bead_xy = io.extract_xy(locs=green_beads), io.extract_xy(locs=red_beads)
-
-    matrix = calculate_transformation_matrix(channel1=green_bead_xy, channel2=red_bead_xy)
-
-    green_bead_xy_reg = register_channel(channel=green_bead_xy, matrix=matrix)
-
-    nearest_neighbors = calculate_nneighbor_dist(ch1_locs=green_bead_xy_reg, ch2_locs=red_bead_xy, radii=[1, 1])
-
-    green_xy_filt, red_xy_filt = filter_bead_locs(ch1_locs=green_bead_xy, ch2_locs=red_bead_xy, nneighbors=nearest_neighbors)
-
-    matrix_2 = calculate_transformation_matrix(channel1=green_xy_filt, channel2=red_xy_filt)
-
-    green_xy_reg = register_channel(channel=green_locs_xy, matrix=matrix_2)
-
-    green_locs_cor = io.save_corrected_channels(cor_locs=green_xy_reg, locs=green_locs, out=out)
-
-    green, red = add_channel(locs=green_locs_cor, channel=1), add_channel(locs=red_locs, channel=2)
-
-    green_xy, red_xy = io.extract_xy(green), io.extract_xy(red)
-    
-    radii = generate_radii(bounding_radius=125, increment=25)
-
-    areas = convert_radii_to_areas(radii)
-
-    gg_dist, gr_dist = calc_all_distributions(green_xy, red_xy, radii, areas)
-    
-    green_spearman = calc_spearman_cor_coeff(gg_dist, gr_dist)
-
-    colocs = calc_coloc_values(green_spearman, green_xy, red_xy, radii)
-
-    io.save_locs_colocs(add_coloc_values(locs=green, coloc_values=colocs),
-                       channel=1, out=out)
-    
-    rr_dist, rg_dist = calc_all_distributions(red_xy, green_xy, radii, areas)
-    
-    red_spearman = calc_spearman_cor_coeff(rr_dist, rg_dist)
-
-    colocs_red = calc_coloc_values(red_spearman, red_xy, green_xy, radii)
-    
-    io.save_locs_colocs(add_coloc_values(locs=red, coloc_values=colocs_red),
-                     channel=2, out=out)
-    
-    all_locs = combine_channel_locs(add_coloc_values(locs=green, coloc_values=colocs),
-                                    add_coloc_values(locs=red, coloc_values=colocs_red))
-
-    io.save_locs_colocs(all_locs, channel=3, out=out)
-
-    end = time.perf_counter()
-    print("Elapsed (with compilation) = {}s".format((end - start)))
-
-if __name__ == "__main__":
-    main()

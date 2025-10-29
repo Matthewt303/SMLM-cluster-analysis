@@ -48,3 +48,6 @@ dev = ["ruff >= 0.14.0"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/smlm_clust_analysis"]
+
+[project.scripts]
+two-color-analysis = "smlm_clust_analysis.two_colour_analysis:main"
