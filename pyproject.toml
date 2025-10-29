@@ -50,4 +50,5 @@ dev = ["ruff >= 0.14.0"]
 packages = ["src/smlm_clust_analysis"]
 
 [project.scripts]
-two-color-analysis = "smlm_clust_analysis.two_colour_analysis:main"
+analyze-coloc = "smlm_clust_analysis.two_colour_analysis:main"
+detect-clusters = "smlm_clust_analysis.clust_detection:main"
