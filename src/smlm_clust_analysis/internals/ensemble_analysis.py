@@ -1,6 +1,6 @@
 import numpy as np
 from scipy import stats
-from plots import plot_boxplot
+from smlm_clust_analysis.internals.file_io import plot_boxplot
 import itertools
 
 def mann_whitney_utest(data1: 'np.ndarray[np.float64]', data2: 'np.ndarray[np.float64]', statistic: str, out: str) -> float:

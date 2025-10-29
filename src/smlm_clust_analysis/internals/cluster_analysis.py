@@ -4,9 +4,9 @@ from scipy.spatial import ConvexHull
 from sklearn.metrics import pairwise_distances
 from collections import Counter
 from sklearn.cluster import HDBSCAN
-from file_io import load_locs, extract_xy, save_dbscan_results
-from file_io import save_cluster_analysis, save_statistics
-from plots import plot_cluster_statistics
+from smlm_clust_analysis.internals.file_io import load_locs, extract_xy, save_dbscan_results
+from smlm_clust_analysis.internals.file_io import save_cluster_analysis, save_statistics
+from smlm_clust_analysis.internals.plots import plot_cluster_statistics
 
 ## Cluster analysis functions
 

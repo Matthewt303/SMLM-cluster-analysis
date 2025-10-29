@@ -1,7 +1,7 @@
 import ripleyk
 import numpy as np
-from file_io import load_locs, extract_xy, save_max_r
-from plots import plot_ripley_h
+from smlm_clust_analysis.internals.file_io import load_locs, extract_xy, save_max_r
+from smlm_clust_analysis.internals.plots import plot_ripley_h
 
 def generate_radii(bounding_radius: float, increment: float) -> list[float]:
 

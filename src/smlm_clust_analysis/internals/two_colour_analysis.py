@@ -4,8 +4,8 @@ import cv2 as cv
 from scipy import stats
 from scipy.spatial import cKDTree
 import time
-import file_io as io
-from cluster_detection import generate_radii
+import smlm_clust_analysis.internals.file_io as io
+from smlm_clust_analysis.internals.cluster_detection import generate_radii
 
 
 def calculate_transformation_matrix(channel1: 'np.ndarray[np.float32]', channel2: 'np.ndarray[np.float32]') -> 'np.ndarray[np.float32]':

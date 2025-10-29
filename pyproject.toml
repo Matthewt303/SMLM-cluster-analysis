@@ -5,8 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "SMLM-cluster-analysis"
 version = "0.1.0"
-description = "Command line scripts for colocalization analysis
-and cluster analysis of SMLM data."
+description = "Command line scripts for colocalization analysis and cluster analysis of SMLM data."
 
 readme = "README.md"
 
