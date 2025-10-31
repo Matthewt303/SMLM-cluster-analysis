@@ -52,3 +52,4 @@ packages = ["src/smlm_clust_analysis"]
 [project.scripts]
 analyze-coloc = "smlm_clust_analysis.two_colour_analysis:main"
 detect-clusters = "smlm_clust_analysis.clust_detection:main"
+analyze-clusters = "smlm_clust_analysis.clust_analysis:main"

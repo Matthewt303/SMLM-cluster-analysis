@@ -48,9 +48,9 @@ def main():
 
     _, coloc = clst.separate_coloc_data(data)
 
-    clusters_coloc = clst.hdbscan(coloc, min_n=opt.min_cluser_size)
+    clusters_coloc = clst.hdbscan(coloc, min_n=opt.min_cluster_size)
 
-    clusters_coloc_filt = clst.denoise_data(clusters_coloc, min_n=opt.min_cluser_size)
+    clusters_coloc_filt = clst.denoise_data(clusters_coloc, min_n=opt.min_cluster_size)
 
     save_dbscan_results(
         clusters_coloc_filt, n_channels=2, outpath=opt.out_folder, filt=1
