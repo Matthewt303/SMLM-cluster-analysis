@@ -26,10 +26,10 @@ def check_args(args: object) -> None:
     if not os.path.isfile(arg_dict["ch1_loc_file"]):
         raise FileNotFoundError("Channel 1 locs file does not exist.")
 
-    if not os.path.isfile(arg_dict["ch2_loc_file"], str):
+    if not os.path.isfile(arg_dict["ch2_loc_file"]):
         raise TypeError("Channel 2 locs file does not exist.")
 
-    if not os.path.isdir(arg_dict["out_folder"], str):
+    if not os.path.isdir(arg_dict["out_folder"]):
         raise TypeError("Output folder does not exist.")
 
 def main():

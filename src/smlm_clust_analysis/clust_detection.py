@@ -17,10 +17,10 @@ def check_args(args: object) -> None:
         if not arg:
             raise TypeError("One or more required arguments are missing.")
 
-    if not os.path.isdir(arg_dict["loc_file"]):
+    if not os.path.isfile(arg_dict["loc_file"]):
         raise FileNotFoundError("Loc file does not exist")
 
-    if not isinstance(arg_dict["out_folder"], str):
+    if not os.path.isdir(arg_dict["out_folder"]):
         raise TypeError("Output folder does not exist.")
     
     if arg_dict["bounding_radius"] <= 0:
