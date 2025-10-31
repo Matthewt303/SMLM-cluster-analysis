@@ -251,7 +251,7 @@ def analyse_clusters(dbscan_data: 'np.ndarray[np.float64]') -> 'np.ndarray[np.fl
 
         circularity = calculate_circularity(cluster_perim, cluster_area)
 
-        cluster_density = calculate_cluster_density(intensity, cluster_area)
+        cluster_density = calculate_cluster_density(cluster_points.shape[0], cluster_area)
 
         analysis_results.append([center_of_mass[0], center_of_mass[1], cluster_area,
                                  cluster_radius, circularity, intensity, cluster_density, label])

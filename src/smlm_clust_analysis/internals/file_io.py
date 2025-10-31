@@ -114,6 +114,8 @@ def save_locs_colocs(processed_data: 'np.ndarray[np.float32]', channel: int, out
     locs_proc.to_csv(os.path.join(out, "processed_locs_" +
                                   str(channel) + '.csv'), index=False)
 
+##-------DBSCAN FILE IO--------##
+
 def save_dbscan_results(data: 'np.ndarray[np.float64]', n_channels: int, outpath: str, filt: int=0):
 
     """
@@ -227,3 +229,23 @@ def save_statistics(cluster_statistics: dict, out: str, coloc: int=0):
 
                 print(stat + ' ' + str(cluster_statistics[stat]) + '\n',
                     file=f)
+
+##------CLUSTER ANALYSIS FILE IO-------##
+
+def collate_clust_files(folder: str) -> list[str]:
+
+    """
+    Collates .csv files with cluster statistics and returns the file paths
+    as a list.
+
+    In: folder. The folder where cluster statistics files are stored..
+    
+    Out: clust_files - file paths of cluster data, sorted alphabetically.
+    """
+
+    clust_files = [
+        file for file in os.listdir(folder)
+        if file.endswith(".csv")
+    ]
+
+    return sorted(clust_files)
