@@ -40,7 +40,6 @@ def main():
     parser.add_argument("--loc_file", type=str)
     parser.add_argument("--out_folder", type=str)
     parser.add_argument("--min_cluster_size", type=int)
-    parser.add_argument("--radius_increment", type=int)
 
     opt = parser.parse_args()
     check_args(opt)
