@@ -238,14 +238,58 @@ def collate_clust_files(folder: str) -> list[str]:
     Collates .csv files with cluster statistics and returns the file paths
     as a list.
 
-    In: folder. The folder where cluster statistics files are stored..
+    In: folder. The folder where cluster statistics files are stored.
     
     Out: clust_files - file paths of cluster data, sorted alphabetically.
     """
 
     clust_files = [
-        file for file in os.listdir(folder)
+        os.path.join(folder, file) for file in os.listdir(folder)
         if file.endswith(".csv")
     ]
 
     return sorted(clust_files)
+
+def load_clust_stats(file: str) -> 'pd.DataFrame':
+
+    """
+    Loads a .csv file from its file path, using only columns 2,3,4,5, and 6.
+    Note that these correspond to cluster properties.
+
+    In: file - .csv file containing the cluster data.
+    
+    Out: clust_stats - pandas dataframe containing cluster properties.
+    """
+
+    clust_stats = pd.read_csv(file, sep=",", usecols=[2, 3, 4, 5, 6], engine='pyarrow')
+
+    return clust_stats
+
+def combine_all_stats(file_paths: list[str], conditions: list[str]) -> "pd.DataFrame":
+
+    """
+    Loads all .csv files of cluster statistics, inserts a new column
+    corresponding to the user-supplied specifications for experimental
+    conditions, and returns a single dataframe that concatenates all
+    data.
+
+    In: file_paths, a list of file paths for the cluster statistics.
+    conditions: user-supplied list of experimental conditions.
+    
+    Out: all_data - pandas dataframe containing all cluster properties
+    for all experimental conditions.
+    """
+
+    all_data = []
+
+    for file_path, condition in zip(file_paths, conditions):
+
+        clust_data = load_clust_stats(file_path)
+
+        cond_list = [condition] * clust_data.shape[0]
+
+        clust_data.insert(clust_data.shape[1], "Condition", cond_list)
+
+        all_data.append(clust_data)
+    
+    return pd.concat(all_data)
