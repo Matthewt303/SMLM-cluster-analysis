@@ -17,19 +17,19 @@ def check_args(args: object) -> None:
         if not arg:
             raise TypeError("One or more required arguments are missing.")
 
-    if not os.path.isdir(arg_dict["beads_ch1_file"]):
+    if not os.path.isfile(arg_dict["beads_ch1_file"]):
         raise FileNotFoundError("Bead channel 1 file does not exist")
 
-    if not os.path.isdir(arg_dict["beads_ch2_file"]):
+    if not os.path.isfile(arg_dict["beads_ch2_file"]):
         raise FileNotFoundError("Bead channel 2 file does not exist")
 
-    if not os.path.isdir(arg_dict["ch1_loc_file"]):
+    if not os.path.isfile(arg_dict["ch1_loc_file"]):
         raise FileNotFoundError("Channel 1 locs file does not exist.")
 
-    if not isinstance(arg_dict["ch2_loc_file"], str):
+    if not os.path.isfile(arg_dict["ch2_loc_file"], str):
         raise TypeError("Channel 2 locs file does not exist.")
 
-    if not isinstance(arg_dict["out_folder"], str):
+    if not os.path.isdir(arg_dict["out_folder"], str):
         raise TypeError("Output folder does not exist.")
 
 def main():
@@ -99,7 +99,7 @@ def main():
     all_locs = tc.combine_channel_locs(tc.add_coloc_values(locs=green, coloc_values=colocs),
                                     tc.add_coloc_values(locs=red, coloc_values=colocs_red))
 
-    io.save_locs_colocs(all_locs, channel=3, out=opt.out_folder)
+    io.save_locs_colocs(all_locs, channel='all', out=opt.out_folder)
 
     end = time.perf_counter()
     print("Elapsed (with compilation) = {}s".format((end - start)))
