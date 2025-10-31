@@ -4,9 +4,8 @@ from scipy.spatial import ConvexHull
 from sklearn.metrics import pairwise_distances
 from collections import Counter
 from sklearn.cluster import HDBSCAN
-from smlm_clust_analysis.internals.file_io import load_locs, extract_xy, save_dbscan_results
-from smlm_clust_analysis.internals.file_io import save_cluster_analysis, save_statistics
-from smlm_clust_analysis.internals.plots import plot_cluster_statistics
+from smlm_clust_analysis.internals.file_io import extract_xy
+
 
 ## Cluster analysis functions
 
@@ -334,41 +333,3 @@ def calculate_statistics(filt_cluster_data: pd.DataFrame) -> dict:
         clust_statistics[filt_cluster_data.columns[i]] = statistics
 
     return clust_statistics
-
-def main():
-
-    """
-    This function also calculates statistics and plots them following separation
-    into colocalised vs non-colocalised. However, the separation is carried out
-    prior to HDBSCAN.
-    """
-    path = 'C:/Users/mxq76232/Downloads/test_coloc/processed_locs_3.csv'
-
-    outpath = 'C:/Users/mxq76232/Downloads/test_coloc/clust'
-
-    data = load_locs(path, channels=2)
-
-    _, coloc = separate_coloc_data(data)
-
-    clusters_coloc = hdbscan(coloc, min_n=4)
-
-    clusters_coloc_filt = denoise_data(clusters_coloc, min_n=4)
-
-    save_dbscan_results(clusters_coloc_filt, n_channels=2, outpath=outpath, filt=1)
-
-    coloc_analysed = analyse_clusters(dbscan_data=clusters_coloc_filt)
-
-    coloc_analysed_filt =  filter_clusters(coloc_analysed)
-
-    coloc_df = convert_to_dataframe(coloc_analysed_filt)
-
-    save_cluster_analysis(filt_cluster_data=coloc_df, outpath=outpath)
-
-    plot_cluster_statistics(filt_cluster_data=coloc_df, outpath=outpath, coloc=2)
-
-    coloc_clust_stats = calculate_statistics(filt_cluster_data=coloc_df)
-
-    save_statistics(coloc_clust_stats, out=outpath, coloc=2)
-
-if __name__ == "__main__":
-    main()
