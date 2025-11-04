@@ -28,6 +28,16 @@ def check_args(args: object) -> None:
 
     if not os.path.isfile(arg_dict["ch2_loc_file"]):
         raise TypeError("Channel 2 locs file does not exist.")
+    
+    if arg_dict["max_radius"] <= 0:
+        raise ValueError("Maximum radius cannot be less than or equal to zero.")
+    
+    if arg_dict["radius_increment"] <= 0:
+        raise ValueError("Radius increment cannot be less than or equal to zero")
+    
+    if arg_dict["max_radius"] <= arg_dict["radius_increment"]:
+        raise ValueError("Max radius cannot be less than or the same as"
+        "the radius increment.")
 
     if not os.path.isdir(arg_dict["out_folder"]):
         raise TypeError("Output folder does not exist.")
@@ -40,6 +50,8 @@ def main():
     parser.add_argument("--beads_ch2_file", type=str)
     parser.add_argument("--ch1_loc_file", type=str)
     parser.add_argument("--ch2_loc_file", type=str)
+    parser.add_argument("--max_radius", type=float)
+    parser.add_argument("--radius_increment", type=float)
     parser.add_argument("--out_folder", type=str)
 
     opt = parser.parse_args()
@@ -76,7 +88,7 @@ def main():
 
     green_xy, red_xy = io.extract_xy(green), io.extract_xy(red)
     
-    radii = generate_radii(bounding_radius=125, increment=25)
+    radii = generate_radii(bounding_radius=opt.max_radius, increment=opt.radius_increment)
 
     areas = tc.convert_radii_to_areas(radii)
 
