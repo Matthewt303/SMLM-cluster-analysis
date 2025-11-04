@@ -144,7 +144,7 @@ def plot_histogram(data: pd.DataFrame, title: str, out: str, coloc: int=0):
 
     mpl.rcParams["font.sans-serif"] = ["Arial"]
     mpl.rcParams['font.family'] = 'sans-serif'
-    mpl.rcParams['font.size'] = 28
+    mpl.rcParams['font.size'] = 24
 
     fig, ax = plt.subplots(figsize=(10, 10), dpi=500)
 
@@ -180,8 +180,8 @@ def plot_histogram(data: pd.DataFrame, title: str, out: str, coloc: int=0):
     ax.spines['right'].set_linewidth(1.0)
     ax.spines['left'].set_linewidth(1.0)
 
-    ax.set_xlabel(title, labelpad=6, fontsize=32)
-    ax.set_ylabel('Normalized frequency', labelpad=4, fontsize=32)
+    ax.set_xlabel(title, labelpad=6, fontsize=28)
+    ax.set_ylabel('Normalized frequency', labelpad=1, fontsize=28)
 
     if coloc == 0:
     
