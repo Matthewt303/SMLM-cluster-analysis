@@ -38,6 +38,16 @@ def extract_xy(locs: 'np.ndarray[np.float32]') -> 'np.ndarray[np.float32]':
 
     return locs[:, 2:4].reshape(-1, 2)
 
+def save_reg_error(outpath: str, reg_error: float) -> None:
+
+    """
+    Save the registration error from channel registration
+    """
+
+    with open(os.path.join(outpath, "registration_error.txt"), "w") as f:
+
+        f.write("The channel registration error is: " + str(reg_error) + " nm")
+
 def save_max_r(outpath: str, max_r: float) -> None:
 
     """

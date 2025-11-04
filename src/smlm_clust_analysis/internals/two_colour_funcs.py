@@ -65,6 +65,23 @@ def filter_bead_locs(ch1_locs: 'np.ndarray[np.float32]', ch2_locs: 'np.ndarray[n
     
     return ch1_filt.astype(np.float32), ch2_filt.astype(np.float32)
 
+def calc_reg_error(ch1_locs: "np.ndarray", ch2_locs: "np.ndarray", matrix: "np.ndarray") -> float:
+
+    """
+    This function calculates the registration error between two channels
+
+    In: ch1_locs---xy localisations of one channel (np array)
+    ch2_locs---xy localisations of second channel (np array)
+    matrix---the transformation matrix for channel registration
+
+    Out: reg error - the median nearest neighbour distance for all beads
+    """
+
+    ch1_registered = register_channel(ch1_locs, matrix)
+    nearest_neighbors = calculate_nneighbor_dist(ch1_registered, ch2_locs, radius=[1, 1])
+
+    return np.median(nearest_neighbors)
+
 
 ## Functions for two-color STORM---CBC analysis
 
