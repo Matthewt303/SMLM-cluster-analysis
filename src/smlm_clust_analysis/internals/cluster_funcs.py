@@ -140,7 +140,7 @@ def calculate_ch1_intensity(cluster_points: 'np.ndarray[np.float64]') -> int:
     else:
         ch1_locs = cluster_points[ch1_indices, :]
 
-        return np.size(ch1_locs, axis=0)
+        return 100 * np.size(ch1_locs, axis=0) / cluster_points.shape[0]
 
 def calculate_center_of_mass(points: 'np.ndarray[np.float64]') -> 'np.ndarray[np.float64]':
 
@@ -261,8 +261,9 @@ def analyse_clusters(dbscan_data: 'np.ndarray[np.float64]') -> 'np.ndarray[np.fl
 def filter_clusters(cluster_data: 'np.ndarray[np.float64]') -> 'np.ndarray[np.float64]':
 
     """
-    Remove clusters with very large radii or very high
-    intensities and  ensure no values are nan.
+    Remove clusters with very large radii or with radii below the limits
+    of localization precision, and remove clusters with no locs from channel 1.
+    Also ensures no values are nan.
 
     In: cluster_data---table with cluster statisitcs (np array)
 
@@ -274,7 +275,9 @@ def filter_clusters(cluster_data: 'np.ndarray[np.float64]') -> 'np.ndarray[np.fl
 
     filt_r = filtered_clust_data[(filtered_clust_data[:, 3] > 20)]
 
-    filt_all = filt_r[(filt_r[:, 5] < 100)]
+    filt_ch1_count = filt_r[(filt_r[:, 5] > 0)]
+
+    filt_all = filt_ch1_count[(filt_ch1_count[:, 5] < 100)]
 
     return filt_all
 
@@ -296,7 +299,7 @@ def convert_to_dataframe(filt_cluster_data: 'np.ndarray[np.float64]') -> pd.Data
         'Area (nm^2)',
         'Radius (nm)',
         'Circularity',
-        'Intensity',
+        'Percent of Channel 1',
         'Density (n . um^-2)',
         'label',
     ]
