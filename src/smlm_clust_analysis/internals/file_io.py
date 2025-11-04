@@ -271,7 +271,13 @@ def load_clust_stats(file: str) -> 'pd.DataFrame':
     Out: clust_stats - pandas dataframe containing cluster properties.
     """
 
-    clust_stats = pd.read_csv(file, sep=",", usecols=[2, 3, 4, 5, 6], engine='pyarrow')
+    cols = ['Area (nm^2)',
+        'Radius (nm)',
+        'Circularity',
+        'Percent of Channel 1',
+        'Density (n . um^-2)']
+
+    clust_stats = pd.read_csv(file, sep=",", usecols=cols, engine='pyarrow')
 
     return clust_stats
 
