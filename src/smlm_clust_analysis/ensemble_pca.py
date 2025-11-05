@@ -16,8 +16,13 @@ def main():
 
     norm_clust_data = pc.z_norm_cluster_features(clust_data_array)
 
-    print(norm_clust_data[0:6, :])
-    print(np.mean(norm_clust_data, axis=0))
+    pca_data, loadings = pc.pca(norm_clust_data)
+
+    pca_data_df = pc.convert_to_df_2d(pca_data)
+
+    print(pca_data.shape)
+    print(loadings)
+    print(pca_data_df.head())
 
 if __name__ == "__main__":
     main()
