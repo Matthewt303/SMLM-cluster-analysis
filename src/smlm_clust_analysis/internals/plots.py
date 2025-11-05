@@ -364,6 +364,8 @@ def plot_components_3d(final_df: 'pd.DataFrame'):
                    final_df.loc[indices, 'Principal component 3'],
                    c=next(colors), s=60, label=target)
     
+    plt.show()
+    
 def plot_var_ratio(var_ratio: 'np.ndarray[np.float64]', out: str):
 
     """
