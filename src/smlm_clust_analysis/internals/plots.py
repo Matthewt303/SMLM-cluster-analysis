@@ -324,3 +324,41 @@ def compare_channels(channel1, channel2):
     ax.spines['left'].set_linewidth(1.0)
 
     plt.show()
+
+##-----PCA plots-----##
+
+def plot_components_2d(final_df: 'pd.DataFrame') -> None:
+    
+    fig, ax = plt.subplots()
+    
+    conditions = set(final_df[final_df.columns[-1]])
+    
+    colors = iter(plt.cm.viridis(np.linspace(0, 1, final_df.shape[1])))
+    
+    for condition in conditions:
+        
+        indices = final_df[final_df.columns[-1]] == condition
+        
+        ax.scatter(final_df.loc[indices, 'PC1 Reduced Data'], 
+                   final_df.loc[indices, 'PC2 Reduced Data'],
+                   c=next(colors), s=80, label=condition)
+        
+
+def plot_components_3d(final_df: 'pd.DataFrame'):
+    
+    fig = plt.figure()
+    ax = fig.add_subplot(projection='3d')
+    
+    targets = set(final_df[final_df.columns[-1]])
+    
+    colors = iter(plt.cm.viridis(np.linspace(0, 1, final_df.shape[1])))
+    
+    for target in targets:
+        
+        indices = final_df[final_df.columns[-1]] == target
+    
+        ax.scatter(final_df.loc[indices, 'Principal component 1'],
+                   final_df.loc[indices, 'Principal component 2'],
+                   final_df.loc[indices, 'Principal component 3'],
+                   c=next(colors), s=60, label=target)
+    

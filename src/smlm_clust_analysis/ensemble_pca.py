@@ -16,13 +16,12 @@ def main():
 
     norm_clust_data = pc.z_norm_cluster_features(clust_data_array)
 
-    pca_data, loadings = pc.pca(norm_clust_data)
+    pca_data, loadings, variance_ratio = pc.pca(norm_clust_data)
+    io.save_expl_var(variance_ratio, input)
 
     pca_data_df = pc.convert_to_df_2d(pca_data)
 
-    print(pca_data.shape)
-    print(loadings)
-    print(pca_data_df.head())
+    all_data_df = pc.generate_final_df(pca_data_df, all_clust_data)
 
 if __name__ == "__main__":
     main()

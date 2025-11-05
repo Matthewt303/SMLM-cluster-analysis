@@ -309,3 +309,12 @@ def combine_all_stats(file_paths: list[str], conditions: list[str]) -> "pd.DataF
         all_data.append(clust_data)
     
     return pd.concat(all_data)
+
+def save_expl_var(variance_ratio: "np.ndarray", out: str) -> None:
+
+    with open(os.path.join(out, "explained_variance.txt"), "w") as f:
+
+        for i, ratio in enumerate(variance_ratio):
+
+            f.write("The explained variance is " + str(ratio) + 
+                    " for principal component " + str(i) + "\n")

@@ -124,7 +124,8 @@ def convert_to_df_3d(principal_components: 'np.ndarray') -> 'pd.DataFrame':
 
 def generate_final_df(reduced_df: 'pd.DataFrame', original_df: 'pd.DataFrame') -> 'pd.DataFrame':
     
-    final_df = pd.concat([reduced_df, original_df], axis=1)
+    final_df = pd.concat([reduced_df.reset_index(drop=True),
+                          original_df.reset_index(drop=True)], axis=1)
     
     return final_df
 
