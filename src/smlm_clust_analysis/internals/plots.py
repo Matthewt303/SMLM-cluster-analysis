@@ -342,6 +342,8 @@ def plot_components_2d(final_df: 'pd.DataFrame') -> None:
         ax.scatter(final_df.loc[indices, 'PC1 Reduced Data'], 
                    final_df.loc[indices, 'PC2 Reduced Data'],
                    c=next(colors), s=80, label=condition)
+    
+    plt.show()
         
 
 def plot_components_3d(final_df: 'pd.DataFrame'):
@@ -362,3 +364,53 @@ def plot_components_3d(final_df: 'pd.DataFrame'):
                    final_df.loc[indices, 'Principal component 3'],
                    c=next(colors), s=60, label=target)
     
+def plot_var_ratio(var_ratio: 'np.ndarray[np.float64]', out: str):
+
+    """
+
+    """
+
+    plt.ioff()
+
+    mpl.rcParams["font.sans-serif"] = ["Arial"]
+    mpl.rcParams['font.family'] = 'sans-serif'
+    mpl.rcParams['font.size'] = 24
+
+    fig, ax = plt.subplots(figsize=(10, 10), dpi=500)
+
+    ax.plot(["PC1", "PC2", "PC3", "PC4", "PC5"], var_ratio, 'darkblue', linewidth=5.0, label="H(r)")
+
+    ratio = 1.0
+
+    # Make sure figure is square
+    x_left, x_right = ax.get_xlim()
+    y_low, y_high = ax.get_ylim()
+    ax.set_aspect(abs((x_right-x_left)/(y_low-y_high)) * ratio)
+
+    ax.tick_params(axis='y', which='major', length=10, direction='in')
+    ax.tick_params(axis='y', which='minor', length=5, direction='in')
+    ax.tick_params(axis='x', which='major', length=10, direction='in')
+    ax.tick_params(axis='x', which='minor', length=5, direction='in')
+
+    ax.xaxis.set_minor_locator(AutoMinorLocator(10))
+    ax.yaxis.set_minor_locator(AutoMinorLocator(10))
+    ax.yaxis.set_major_formatter(FormatStrFormatter("%.2f"))
+
+    ax.xaxis.label.set_color('black')
+    ax.yaxis.label.set_color('black')
+
+    ax.spines['bottom'].set_color('black')
+    ax.spines['top'].set_color('black')
+    ax.spines['right'].set_color('black')
+    ax.spines['left'].set_color('black')
+    ax.spines['bottom'].set_linewidth(1.0)
+    ax.spines['top'].set_linewidth(1.0)
+    ax.spines['right'].set_linewidth(1.0)
+    ax.spines['left'].set_linewidth(1.0)
+
+    # Axis labels
+    ax.set_xlabel('Principal components', labelpad=2, fontsize=32)
+    ax.set_ylabel('Ratio of variance', labelpad=2, fontsize=32)
+
+    plt.savefig(os.path.join(out, "var_ratio.svg"))
+    plt.savefig(os.path.join(out, "var_ratio.png"))
