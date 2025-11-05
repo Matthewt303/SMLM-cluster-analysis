@@ -140,7 +140,7 @@ def calculate_ch1_intensity(cluster_points: 'np.ndarray[np.float64]') -> int:
     else:
         ch1_locs = cluster_points[ch1_indices, :]
 
-        return 100 * np.size(ch1_locs, axis=0) / cluster_points.shape[0]
+        return np.size(ch1_locs, axis=0)
 
 def calculate_center_of_mass(points: 'np.ndarray[np.float64]') -> 'np.ndarray[np.float64]':
 
@@ -299,7 +299,7 @@ def convert_to_dataframe(filt_cluster_data: 'np.ndarray[np.float64]') -> pd.Data
         'Area (nm^2)',
         'Radius (nm)',
         'Circularity',
-        'Percent of Channel 1',
+        'Number of Channel 1',
         'Density (n . um^-2)',
         'label',
     ]
