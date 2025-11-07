@@ -1,6 +1,7 @@
 import smlm_clust_analysis.internals.file_io as io
 import smlm_clust_analysis.internals.two_colour_funcs as tc
 from smlm_clust_analysis.internals.ripley_funcs import generate_radii
+from smlm_clust_analysis.internals.plots import plot_reg_error
 import time
 import argparse
 import os
@@ -79,6 +80,7 @@ def main():
     matrix_2 = tc.calculate_transformation_matrix(channel1=green_xy_filt, channel2=red_xy_filt)
     nneighbors, reg_error = tc.calc_reg_error(green_xy_filt, red_xy_filt, matrix_2)
     io.save_reg_error(opt.out_folder, reg_error)
+    plot_reg_error(nneighbors, opt.out_folder)
 
     green_xy_reg = tc.register_channel(channel=green_locs_xy, matrix=matrix_2)
 
