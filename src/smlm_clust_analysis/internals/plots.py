@@ -387,7 +387,7 @@ def plot_components_2d(final_df: 'pd.DataFrame', out: str) -> None:
     
     conditions = set(final_df[final_df.columns[-1]])
     
-    colors = iter(plt.cm.cool(np.linspace(0, 1, final_df.shape[1])))
+    colors = iter(plt.cm.magma(np.linspace(0, 1, final_df.shape[1])))
     
     for condition in conditions:
         
@@ -395,9 +395,9 @@ def plot_components_2d(final_df: 'pd.DataFrame', out: str) -> None:
         
         ax.scatter(final_df.loc[indices, 'PC1 Reduced Data'], 
                    final_df.loc[indices, 'PC2 Reduced Data'],
-                   c=next(colors), s=15, label=condition)
+                   c=next(colors), s=40, label=condition)
     
-    leg = plt.legend(bbox_to_anchor=(0.5, 1.125), loc="upper center", ncol=2)
+    leg = plt.legend(bbox_to_anchor=(0.5, 1.175), loc="upper center", ncol=2)
 
     for line in leg.get_lines():
         line.set_linewidth(3.5)
@@ -419,7 +419,7 @@ def plot_components_2d(final_df: 'pd.DataFrame', out: str) -> None:
 
     ax.xaxis.set_minor_locator(AutoMinorLocator(10))
     ax.yaxis.set_minor_locator(AutoMinorLocator(10))
-    ax.yaxis.set_major_formatter(FormatStrFormatter("%.2f"))
+    ax.yaxis.set_major_formatter(FormatStrFormatter("%.1f"))
 
     ax.xaxis.label.set_color('black')
     ax.yaxis.label.set_color('black')
@@ -439,8 +439,6 @@ def plot_components_2d(final_df: 'pd.DataFrame', out: str) -> None:
 
     plt.savefig(os.path.join(out, "pca_plot.svg"))
     plt.savefig(os.path.join(out, "pca_plot.png"))
-
-    plt.show()
         
 
 def plot_components_3d(final_df: 'pd.DataFrame'):

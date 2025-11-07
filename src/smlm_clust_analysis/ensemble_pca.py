@@ -1,7 +1,7 @@
 import numpy as np
 import smlm_clust_analysis.internals.pca_funcs as pc
 import smlm_clust_analysis.internals.file_io as io
-from smlm_clust_analysis.internals.plots import plot_var_ratio, plot_components_3d
+from smlm_clust_analysis.internals.plots import plot_var_ratio, plot_components_2d
 
 def plot_var():
 
@@ -34,13 +34,13 @@ def main():
 
     norm_clust_data = pc.z_norm_cluster_features(clust_data_array)
 
-    pca_data, loadings, variance_ratio = pc.pca(norm_clust_data, 3)
+    pca_data, loadings, variance_ratio = pc.pca(norm_clust_data, 2)
     io.save_expl_var(variance_ratio, input)
 
-    pca_data_df = pc.convert_to_df_3d(pca_data)
+    pca_data_df = pc.convert_to_df_2d(pca_data)
 
     all_data_df = pc.generate_final_df(pca_data_df, all_clust_data)
-    plot_components_3d(all_data_df)
+    plot_components_2d(all_data_df, input)
 
 if __name__ == "__main__":
     main()
