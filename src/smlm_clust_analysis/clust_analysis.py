@@ -27,6 +27,9 @@ def check_args(args: object) -> None:
 
     if arg_dict["min_cluster_size"] <= 1:
         raise ValueError("Cluster size cannot be one or below.")
+    
+    if arg_dict["n_channels"] < 1 or arg_dict["n_channels"] > 2:
+        raise ValueError("Sorry, only two colour data is supported for now.")
 
 
 def main():
@@ -40,11 +43,12 @@ def main():
     parser.add_argument("--loc_file", type=str)
     parser.add_argument("--out_folder", type=str)
     parser.add_argument("--min_cluster_size", type=int)
+    parser.add_argument("--n_channels", type=int)
 
     opt = parser.parse_args()
     check_args(opt)
 
-    data = load_locs(opt.loc_file, channels=2)
+    data = load_locs(opt.loc_file, channels=opt.n_channels)
 
     _, coloc = clst.separate_coloc_data(data)
 
@@ -53,7 +57,7 @@ def main():
     clusters_coloc_filt = clst.denoise_data(clusters_coloc, min_n=opt.min_cluster_size)
 
     save_dbscan_results(
-        clusters_coloc_filt, n_channels=2, outpath=opt.out_folder, filt=1
+        clusters_coloc_filt, n_channels=opt.n_channels, outpath=opt.out_folder, filt=1
     )
 
     coloc_analysed = clst.analyse_clusters(dbscan_data=clusters_coloc_filt)
@@ -64,11 +68,11 @@ def main():
 
     save_cluster_analysis(filt_cluster_data=coloc_df, outpath=opt.out_folder)
 
-    plot_cluster_statistics(filt_cluster_data=coloc_df, outpath=opt.out_folder, coloc=2)
+    plot_cluster_statistics(filt_cluster_data=coloc_df, outpath=opt.out_folder, coloc=opt.n_channels)
 
     coloc_clust_stats = clst.calculate_statistics(filt_cluster_data=coloc_df)
 
-    save_statistics(coloc_clust_stats, out=opt.out_folder, coloc=2)
+    save_statistics(coloc_clust_stats, out=opt.out_folder, coloc=opt.n_channels)
 
 
 if __name__ == "__main__":

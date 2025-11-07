@@ -133,14 +133,21 @@ def calculate_ch1_intensity(cluster_points: 'np.ndarray[np.float64]') -> int:
     Not to be confused with fluorescent intensity
     """
 
-    ch1_indices = np.where(cluster_points[:, 9] == 1)[0]
+    # For coloc data
+    if cluster_points.shape[1] == 13:
 
-    if not ch1_indices.size > 0:
-        return 0
-    else:
-        ch1_locs = cluster_points[ch1_indices, :]
+        ch1_indices = np.where(cluster_points[:, 9] == 1)[0]
 
-        return np.size(ch1_locs, axis=0)
+        if not ch1_indices.size > 0:
+            return 0
+        else:
+            ch1_locs = cluster_points[ch1_indices, :]
+
+            return np.size(ch1_locs, axis=0)
+    
+    # For non coloc data
+    elif cluster_points.shape[1] < 13:
+        return cluster_points.shape[0]
 
 def calculate_center_of_mass(points: 'np.ndarray[np.float64]') -> 'np.ndarray[np.float64]':
 
