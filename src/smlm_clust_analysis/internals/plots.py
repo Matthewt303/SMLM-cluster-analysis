@@ -377,13 +377,17 @@ def compare_channels(channel1, channel2):
 
 ##-----PCA plots-----##
 
-def plot_components_2d(final_df: 'pd.DataFrame') -> None:
+def plot_components_2d(final_df: 'pd.DataFrame', out: str) -> None:
+
+    mpl.rcParams["font.sans-serif"] = ["Arial"]
+    mpl.rcParams['font.family'] = 'sans-serif'
+    mpl.rcParams['font.size'] = 24
     
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(figsize=(10, 10), dpi=500)
     
     conditions = set(final_df[final_df.columns[-1]])
     
-    colors = iter(plt.cm.viridis(np.linspace(0, 1, final_df.shape[1])))
+    colors = iter(plt.cm.cool(np.linspace(0, 1, final_df.shape[1])))
     
     for condition in conditions:
         
@@ -391,8 +395,51 @@ def plot_components_2d(final_df: 'pd.DataFrame') -> None:
         
         ax.scatter(final_df.loc[indices, 'PC1 Reduced Data'], 
                    final_df.loc[indices, 'PC2 Reduced Data'],
-                   c=next(colors), s=80, label=condition)
+                   c=next(colors), s=15, label=condition)
     
+    leg = plt.legend(bbox_to_anchor=(0.5, 1.125), loc="upper center", ncol=2)
+
+    for line in leg.get_lines():
+        line.set_linewidth(3.5)
+
+    for text in leg.get_texts():
+        text.set_fontsize(28)
+    
+        ratio = 1.0
+
+    # Make sure figure is square
+    x_left, x_right = ax.get_xlim()
+    y_low, y_high = ax.get_ylim()
+    ax.set_aspect(abs((x_right-x_left)/(y_low-y_high)) * ratio)
+
+    ax.tick_params(axis='y', which='major', length=10, direction='in')
+    ax.tick_params(axis='y', which='minor', length=5, direction='in')
+    ax.tick_params(axis='x', which='major', length=10, direction='in')
+    ax.tick_params(axis='x', which='minor', length=5, direction='in')
+
+    ax.xaxis.set_minor_locator(AutoMinorLocator(10))
+    ax.yaxis.set_minor_locator(AutoMinorLocator(10))
+    ax.yaxis.set_major_formatter(FormatStrFormatter("%.2f"))
+
+    ax.xaxis.label.set_color('black')
+    ax.yaxis.label.set_color('black')
+
+    ax.spines['bottom'].set_color('black')
+    ax.spines['top'].set_color('black')
+    ax.spines['right'].set_color('black')
+    ax.spines['left'].set_color('black')
+    ax.spines['bottom'].set_linewidth(1.0)
+    ax.spines['top'].set_linewidth(1.0)
+    ax.spines['right'].set_linewidth(1.0)
+    ax.spines['left'].set_linewidth(1.0)
+
+    # Axis labels
+    ax.set_xlabel('Principal Component 1', labelpad=6, fontsize=32)
+    ax.set_ylabel('Principal Component 2', labelpad=2, fontsize=32)
+
+    plt.savefig(os.path.join(out, "pca_plot.svg"))
+    plt.savefig(os.path.join(out, "pca_plot.png"))
+
     plt.show()
         
 
