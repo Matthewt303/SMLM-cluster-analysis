@@ -50,27 +50,33 @@ def main():
 
     data = load_locs(opt.loc_file, channels=opt.n_channels)
 
-    _, coloc = clst.separate_coloc_data(data)
+    if opt.n_channels == 2:
 
-    clusters_coloc = clst.hdbscan(coloc, min_n=opt.min_cluster_size)
+        _, coloc = clst.separate_coloc_data(data)
 
-    clusters_coloc_filt = clst.denoise_data(clusters_coloc, min_n=opt.min_cluster_size)
+        clusters = clst.hdbscan(coloc, min_n=opt.min_cluster_size)
+    
+    else:
+
+        clusters = clst.hdbscan(data, opt.min_cluster_size, opt.n_channels)
+
+    clusters_filt = clst.denoise_data(clusters, min_n=opt.min_cluster_size)
 
     save_dbscan_results(
-        clusters_coloc_filt, n_channels=opt.n_channels, outpath=opt.out_folder, filt=1
+        clusters_filt, n_channels=opt.n_channels, outpath=opt.out_folder, filt=1
     )
 
-    coloc_analysed = clst.analyse_clusters(dbscan_data=clusters_coloc_filt)
+    analysed = clst.analyse_clusters(dbscan_data=clusters_filt)
 
-    coloc_analysed_filt = clst.filter_clusters(coloc_analysed)
+    analysed_filt = clst.filter_clusters(analysed)
 
-    coloc_df = clst.convert_to_dataframe(coloc_analysed_filt)
+    df = clst.convert_to_dataframe(analysed_filt)
 
-    save_cluster_analysis(filt_cluster_data=coloc_df, outpath=opt.out_folder)
+    save_cluster_analysis(filt_cluster_data=df, outpath=opt.out_folder)
 
-    plot_cluster_statistics(filt_cluster_data=coloc_df, outpath=opt.out_folder, coloc=opt.n_channels)
+    plot_cluster_statistics(filt_cluster_data=df, outpath=opt.out_folder, coloc=opt.n_channels)
 
-    coloc_clust_stats = clst.calculate_statistics(filt_cluster_data=coloc_df)
+    coloc_clust_stats = clst.calculate_statistics(filt_cluster_data=df)
 
     save_statistics(coloc_clust_stats, out=opt.out_folder, coloc=opt.n_channels)
 

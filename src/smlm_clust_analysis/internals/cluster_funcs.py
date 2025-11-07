@@ -9,7 +9,7 @@ from smlm_clust_analysis.internals.file_io import extract_xy
 
 ## Cluster analysis functions
 
-def hdbscan(locs: 'np.ndarray[np.float64]', min_n: int) -> 'np.ndarray[np.float64]':
+def hdbscan(locs: 'np.ndarray[np.float64]', min_n: int, n_channels: int) -> 'np.ndarray[np.float64]':
 
     """"
     HDBSCAN clustering of localization data. Returns the localisation data
@@ -17,6 +17,7 @@ def hdbscan(locs: 'np.ndarray[np.float64]', min_n: int) -> 'np.ndarray[np.float6
 
     In: locs---localization table (numpy array)
     min_n---minimum number of points for cluster classification (int)
+    n_channels---the number of channels
 
     Out: localization table---with cluster classification and probabilities.
     """
@@ -32,7 +33,13 @@ def hdbscan(locs: 'np.ndarray[np.float64]', min_n: int) -> 'np.ndarray[np.float6
 
     cluster_probabilities = hdbscan.probabilities_
 
-    all_data = np.concatenate((locs, labels[:, np.newaxis], cluster_probabilities[:, np.newaxis]), axis=1).reshape(-1, 13)
+    if n_channels > 1:
+
+        all_data = np.concatenate((locs, labels[:, np.newaxis], cluster_probabilities[:, np.newaxis]), axis=1).reshape(-1, 13)
+    
+    else:
+
+        all_data = np.concatenate((locs, labels[:, np.newaxis], cluster_probabilities[:, np.newaxis]), axis=1).reshape(-1, 11)
 
     return all_data
 
