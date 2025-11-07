@@ -54,7 +54,7 @@ def main():
 
         _, coloc = clst.separate_coloc_data(data)
 
-        clusters = clst.hdbscan(coloc, min_n=opt.min_cluster_size)
+        clusters = clst.hdbscan(coloc, opt.min_cluster_size, opt.n_channels)
     
     else:
 

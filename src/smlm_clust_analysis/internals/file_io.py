@@ -274,7 +274,7 @@ def load_clust_stats(file: str) -> 'pd.DataFrame':
     cols = ['Area (nm^2)',
         'Radius (nm)',
         'Circularity',
-        'Percent of Channel 1',
+        'Number of Channel 1',
         'Density (n . um^-2)']
 
     clust_stats = pd.read_csv(file, sep=",", usecols=cols, engine='pyarrow')
