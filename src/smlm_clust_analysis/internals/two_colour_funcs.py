@@ -80,7 +80,7 @@ def calc_reg_error(ch1_locs: "np.ndarray", ch2_locs: "np.ndarray", matrix: "np.n
     ch1_registered = register_channel(ch1_locs, matrix)
     nearest_neighbors = calculate_nneighbor_dist(ch1_registered, ch2_locs, radii=[1, 1])
 
-    return np.median(nearest_neighbors)
+    return nearest_neighbors, np.median(nearest_neighbors)
 
 
 ## Functions for two-color STORM---CBC analysis

@@ -77,7 +77,7 @@ def main():
     green_xy_filt, red_xy_filt = tc.filter_bead_locs(ch1_locs=green_bead_xy, ch2_locs=red_bead_xy, nneighbors=nearest_neighbors)
 
     matrix_2 = tc.calculate_transformation_matrix(channel1=green_xy_filt, channel2=red_xy_filt)
-    reg_error = tc.calc_reg_error(green_xy_filt, red_xy_filt, matrix_2)
+    nneighbors, reg_error = tc.calc_reg_error(green_xy_filt, red_xy_filt, matrix_2)
     io.save_reg_error(opt.out_folder, reg_error)
 
     green_xy_reg = tc.register_channel(channel=green_locs_xy, matrix=matrix_2)

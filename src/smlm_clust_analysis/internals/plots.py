@@ -5,6 +5,56 @@ import numpy as np
 import pandas as pd
 import os
 
+def plot_reg_error(nneighbors: "np.ndarray", out: str):
+
+    plt.ioff()
+
+    weights = np.ones_like(nneighbors) / float(len(nneighbors))
+
+    mpl.rcParams["font.sans-serif"] = ["Arial"]
+    mpl.rcParams['font.family'] = 'sans-serif'
+    mpl.rcParams['font.size'] = 24
+
+    fig, ax = plt.subplots(figsize=(10, 10), dpi=500)
+
+    plt.hist(nneighbors, bins=15, weights=weights, edgecolor='black',
+             linewidth=2.0, color='darkred')
+
+    ax.set_xlim(right=np.max(nneighbors) + 0.05 * np.max(nneighbors))
+    
+    ratio = 1.0
+
+    x_left, x_right = ax.get_xlim()
+    y_low, y_high = ax.get_ylim()
+    ax.set_aspect(abs((x_right-x_left)/(y_low-y_high)) * ratio)
+
+    ax.tick_params(axis='y', which='major', length=6, direction='in')
+    ax.tick_params(axis='y', which='minor', length=3, direction='in')
+    ax.tick_params(axis='x', which='major', length=6, direction='in')
+    ax.tick_params(axis='x', which='minor', length=3, direction='in')
+
+    ax.xaxis.set_minor_locator(AutoMinorLocator(10))
+    ax.yaxis.set_minor_locator(AutoMinorLocator(10))
+    ax.yaxis.set_major_formatter(FormatStrFormatter("%.2f"))
+
+    ax.xaxis.label.set_color('black')
+    ax.yaxis.label.set_color('black')
+
+    ax.spines['bottom'].set_color('black')
+    ax.spines['top'].set_color('black')
+    ax.spines['right'].set_color('black')
+    ax.spines['left'].set_color('black')
+    ax.spines['bottom'].set_linewidth(1.0)
+    ax.spines['top'].set_linewidth(1.0)
+    ax.spines['right'].set_linewidth(1.0)
+    ax.spines['left'].set_linewidth(1.0)
+
+    ax.set_xlabel("Nearest neighbour distance (nm)", labelpad=6, fontsize=28)
+    ax.set_ylabel('Normalized frequency', labelpad=1, fontsize=28)
+
+    plt.savefig(os.path.join(out, '_reg_error_plot.png'))
+    plt.savefig(os.path.join(out, '_reg_error_plot.svg'))
+
 def plot_ripley_h(h_values: 'np.ndarray[np.float64]', radii: list[float], out: str):
 
     """
