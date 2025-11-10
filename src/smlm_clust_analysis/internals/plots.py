@@ -395,7 +395,7 @@ def plot_components_2d(final_df: 'pd.DataFrame', out: str) -> None:
         
         ax.scatter(final_df.loc[indices, 'PC1 Reduced Data'], 
                    final_df.loc[indices, 'PC2 Reduced Data'],
-                   c=next(colors), s=40, label=condition)
+                   c=next(colors), s=40, alpha=0.5, label=condition)
     
     leg = plt.legend(bbox_to_anchor=(0.5, 1.175), loc="upper center", ncol=2)
 

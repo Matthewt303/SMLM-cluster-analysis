@@ -318,3 +318,12 @@ def save_expl_var(variance_ratio: "np.ndarray", out: str) -> None:
 
             f.write("The explained variance is " + str(ratio) + 
                     " for principal component " + str(i) + "\n")
+
+def save_loadings(loadings: "np.ndarray", out: str) -> None:
+
+    with open(os.path.join(out, "PC_loadings.txt"), "w") as f:
+
+        for i, loading in enumerate(loadings.T):
+
+            f.write("The loadings for principal component " + str(i)
+                    + " is" + str(loading) + "\n")

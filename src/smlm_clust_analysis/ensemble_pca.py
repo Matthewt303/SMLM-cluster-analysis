@@ -8,7 +8,7 @@ def plot_var():
     input = "C:/Users/mxq76232/Documents/PhD/Project_work/" \
     "STORM_two_colour_re_analysis_27oct25/all"
     
-    conditions = ["5 minutes", "15 minutes", "30 minutes"]
+    conditions = ["0 minutes", "5 minutes", "15 minutes", "30 minutes"]
 
     file_list = io.collate_clust_files(input)
     all_clust_data = io.combine_all_stats(file_list, conditions)
@@ -35,6 +35,7 @@ def main():
     norm_clust_data = pc.z_norm_cluster_features(clust_data_array)
 
     pca_data, loadings, variance_ratio = pc.pca(norm_clust_data, 2)
+    io.save_loadings(loadings, input)
     io.save_expl_var(variance_ratio, input)
 
     pca_data_df = pc.convert_to_df_2d(pca_data)
