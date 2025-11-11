@@ -35,7 +35,7 @@ def check_args(args: object) -> None:
 
     for arg in arg_dict.values():
         if not arg:
-            raise TypeError("One or more required arguments are missing.")
+            raise TypeError("One or more arguments are missing.")
     
     if not os.path.isdir(arg_dict["in_folder"]):
         raise TypeError("Input folder does not exist.")
@@ -89,7 +89,7 @@ def main():
     parser.add_argument("--n_components", type=int)
 
     opt = parser.parse_args()
-    check_var_args(opt)
+    check_args(opt)
 
     file_list = io.collate_clust_files(opt.in_folder)
     all_clust_data = io.combine_all_stats(file_list, opt.conditions)
@@ -115,6 +115,3 @@ def main():
 
         all_data_df = pc.generate_final_df(pca_data_df, all_clust_data)
         plot_components_3d(all_data_df, opt.out_folder)
-
-if __name__ == "__main__":
-    main()

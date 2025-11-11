@@ -53,3 +53,5 @@ packages = ["src/smlm_clust_analysis"]
 analyze-coloc = "smlm_clust_analysis.two_colour_analysis:main"
 detect-clusters = "smlm_clust_analysis.clust_detection:main"
 analyze-clusters = "smlm_clust_analysis.clust_analysis:main"
+pca-clusters = "smlm_clust_analysis.ensemble_pca:main"
+pca-plot-var = "smlm_clust_analysis.ensemble_pca:plot_var"
