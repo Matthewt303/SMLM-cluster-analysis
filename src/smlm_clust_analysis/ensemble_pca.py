@@ -85,7 +85,7 @@ def main():
 
     parser.add_argument("--in_folder", type=str)
     parser.add_argument("--out_folder", type=str)
-    parser.add_argument("--conditions", type=list)
+    parser.add_argument("--conditions", nargs='+')
     parser.add_argument("--n_components", type=int)
 
     opt = parser.parse_args()

@@ -387,7 +387,7 @@ def plot_components_2d(final_df: 'pd.DataFrame', out: str) -> None:
     
     conditions = set(final_df[final_df.columns[-1]])
     
-    colors = iter(plt.cm.magma(np.linspace(0, 1, final_df.shape[1])))
+    colors = iter(plt.cm.plasma(np.linspace(0, 1, final_df.shape[1])))
     
     for condition in conditions:
         
@@ -395,7 +395,7 @@ def plot_components_2d(final_df: 'pd.DataFrame', out: str) -> None:
         
         ax.scatter(final_df.loc[indices, 'PC1 Reduced Data'], 
                    final_df.loc[indices, 'PC2 Reduced Data'],
-                   c=next(colors), s=40, alpha=0.5, label=condition)
+                   color=next(colors), s=40, alpha=0.5, label=condition)
     
     leg = plt.legend(bbox_to_anchor=(0.5, 1.125), loc="upper center", ncol=2)
 
