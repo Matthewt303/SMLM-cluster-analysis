@@ -64,7 +64,7 @@ def plot_var():
 
     parser.add_argument("--in_folder", type=str)
     parser.add_argument("--out_folder", type=str)
-    parser.add_argument("--conditions", type=list)
+    parser.add_argument("--conditions", nargs="+")
 
     opt = parser.parse_args()
     check_var_args(opt)
