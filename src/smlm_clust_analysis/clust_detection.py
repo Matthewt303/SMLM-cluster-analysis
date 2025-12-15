@@ -31,6 +31,9 @@ def check_args(args: object) -> None:
     
     if arg_dict["radius_increment"] > arg_dict["bounding_radius"]:
         raise ValueError("Radius increment cannot be larger than the radius.")
+    
+    if arg_dict["n_channels"] < 1:
+        raise ValueError("Number of channels cannot be zero")
 
 def main():
 
@@ -40,11 +43,12 @@ def main():
     parser.add_argument("--out_folder", type=str)
     parser.add_argument("--bounding_radius", type=int)
     parser.add_argument("--radius_increment", type=int)
+    parser.add_argument("--n_channels", type=int)
 
     opt = parser.parse_args()
     check_args(opt)
     
-    data = io.load_locs(opt.loc_file, channels=2)
+    data = io.load_locs(opt.loc_file, channels=opt.n_channels)
 
     xy = io.extract_xy(data)
     

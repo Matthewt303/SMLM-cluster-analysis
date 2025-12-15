@@ -103,7 +103,7 @@ def plot_ripley_h(h_values: 'np.ndarray[np.float64]', radii: list[float], out: s
 
     ax.xaxis.set_minor_locator(AutoMinorLocator(10))
     ax.yaxis.set_minor_locator(AutoMinorLocator(10))
-    ax.yaxis.set_major_formatter(FormatStrFormatter("%.0f"))
+    ax.yaxis.set_major_formatter(FormatStrFormatter("%.1f"))
 
     ax.xaxis.label.set_color('black')
     ax.yaxis.label.set_color('black')
