@@ -377,7 +377,12 @@ def compare_channels(channel1, channel2):
 
 ##-----PCA plots-----##
 
-def plot_components_2d(final_df: 'pd.DataFrame', out: str) -> None:
+def plot_components_2d(final_df: 'pd.DataFrame', n_conds: int, out: str) -> None:
+
+    if n_conds < 3:
+        leg_y_coord = 1.125
+    else:
+        leg_y_coord = 1.175
 
     mpl.rcParams["font.sans-serif"] = ["Arial"]
     mpl.rcParams['font.family'] = 'sans-serif'
@@ -397,7 +402,7 @@ def plot_components_2d(final_df: 'pd.DataFrame', out: str) -> None:
                    final_df.loc[indices, 'PC2 Reduced Data'],
                    color=next(colors), s=40, alpha=0.5, label=condition)
     
-    leg = plt.legend(bbox_to_anchor=(0.5, 1.175), loc="upper center", ncol=2)
+    leg = plt.legend(bbox_to_anchor=(0.5, leg_y_coord), loc="upper center", ncol=2)
 
     for line in leg.get_lines():
         line.set_linewidth(3.5)

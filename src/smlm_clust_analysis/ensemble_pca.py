@@ -91,7 +91,10 @@ def main():
     opt = parser.parse_args()
     check_args(opt)
 
+    print(opt.conditions)
+
     file_list = io.collate_clust_files(opt.in_folder)
+    print(file_list)
     all_clust_data = io.combine_all_stats(file_list, opt.conditions)
 
     clust_data_array = pc.extract_features_asarray(all_clust_data)
@@ -107,7 +110,7 @@ def main():
         pca_data_df = pc.convert_to_df_2d(pca_data)
 
         all_data_df = pc.generate_final_df(pca_data_df, all_clust_data)
-        plot_components_2d(all_data_df, opt.out_folder)
+        plot_components_2d(all_data_df, len(file_list), opt.out_folder)
     
     elif opt.n_components == 3:
 
