@@ -1,5 +1,6 @@
 import argparse
 import os
+from smlm_clust_analysis.internals.cluster_funcs import separate_coloc_data
 import smlm_clust_analysis.internals.file_io as io
 import smlm_clust_analysis.internals.ripley_funcs as rf
 from smlm_clust_analysis.internals.plots import plot_ripley_h
@@ -50,7 +51,14 @@ def main():
     
     data = io.load_locs(opt.loc_file, channels=opt.n_channels)
 
-    xy = io.extract_xy(data)
+    if opt.n_channels > 1:
+
+        _, filt_data = separate_coloc_data(data)
+        xy = io.extract_xy(filt_data)
+
+    else:
+
+        xy = io.extract_xy(data)
     
     radii = rf.generate_radii(bounding_radius=opt.bounding_radius,
                            increment=opt.radius_increment)
