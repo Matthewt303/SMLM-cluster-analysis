@@ -63,7 +63,7 @@ def main():
     radii = rf.generate_radii(bounding_radius=opt.bounding_radius,
                            increment=opt.radius_increment)
     
-    k_values = rf.ripley_k_function(xy, r=radii, br=1500)
+    k_values = rf.ripley_k_function(xy, r=radii, br=opt.bounding_radius)
 
     l_values = rf.ripley_l_function(k_values=k_values)
 
