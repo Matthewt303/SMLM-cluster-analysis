@@ -35,7 +35,7 @@ Outputs:
 
 - Localisation files with CBC values
 
-# Cluster detection
+### Cluster detection
 
 Uses Ripley's K-function [1] to detect clusters in localisation data.
 
@@ -50,7 +50,7 @@ Outputs:
 - Plot of Ripley's H-function
 - Radius at which Ripley's H-function is at its maximum 
 
-# Cluster analysis
+### Cluster analysis
 
 Uses HDBSCAN [2] to cluster localisation data.
 
@@ -66,7 +66,7 @@ Output:
 - Cluster parameters for each cluster as a .csv file
 - Cluster statistics in a .txt file
 
-# Analysis of cluster data
+#### Analysis of cluster data
 
 Uses principal component analysis to analyse cluster characteristics.
 
@@ -82,7 +82,7 @@ Output:
 - PCA loadings as a .txt file
 - Proportion of explained variance as a .txt file
 
-# Variance of PCA
+### Variance of PCA
 
 Plots the explained variance for different principal components.
 
